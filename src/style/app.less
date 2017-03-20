@@ -1,0 +1,406 @@
+/* -------------------------- */
+/*  Variables                 */
+/* -------------------------- */
+
+@white: #fff;
+@light-grey: #777;
+@accent: #ff0046;
+@text-accent: #AAB4C8;
+
+
+/* -------------------------- */
+/*  GLOBAL STYLES             */
+/* -------------------------- */
+
+@font-face {
+  font-family: 'jw-icons';
+  src: url("../assets/fonts/jw-icons.woff");
+}
+
+html, body {
+	height: 100%;
+	margin: 0;
+	font-family: 'Open Sans', sans-serif;
+}
+
+#player {
+  position: absolute;
+  display: none;
+}
+
+body #app {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  text-align: center;
+}
+
+/* -------------------------- */
+/*  STATE HANDLING            */
+/* -------------------------- */
+
+.app-state-loading {
+  .logo,
+  .jw-icon-buffer {
+    display: block;
+  }
+}
+
+.app-state-idle {
+  .logo,
+  span.jw-cast-ready {
+    display: block;
+  }
+}
+
+.content-state-loading {
+  .overlay,
+  .overlay .content-buffer,
+  #player {
+    display: block;
+  }
+}
+
+.content-state-playback {
+  .overlay,
+  #player {
+    display: block;
+  }
+  #jw-icon-state,
+  .overlay .media-metadata {
+    display: none;
+  }
+  .jw-cast-controlbar {
+    display: table;
+  }
+}
+
+.content-state-playback.flag-user-inactive,
+.content-state-paused.flag-user-inactive {
+  .overlay {
+    display: none;
+  }
+}
+
+.content-state-playback.flag-seek,
+.content-state-buffering.flag-seek {
+  .overlay {
+    display: block;
+  }
+}
+
+.content-state-buffering {
+  .jw-icon-buffer,
+  #player {
+    display: block;
+  }
+  #jw-icon-state {
+    display: none;
+  }
+}
+
+.content-state-paused {
+  .overlay,
+  #player {
+    display: block;
+  }
+
+  .jw-cast-controlbar {
+    display: table;
+  }
+}
+
+.app-state-error.flag-recoverable-error,
+.content-state-nextup {
+  #player,
+  .overlay,
+  .overlay .media-metadata-info .jw-nextup-timer {
+    display: block;
+  }
+}
+
+.app-state-error {
+  .jw-error-message {
+    display: block;
+  }
+}
+
+.ad-playback {
+  .overlay,
+  #player {
+    display: block;
+  }
+
+  .jw-cast-controlbar {
+    display: block;
+    .jw-text-duration,
+    .jw-text-elapsed,
+    #jw-icon-state {
+      display: inline-block;
+    }
+    .jw-timeslider {
+      display: none;
+    }
+    .jw-text-duration {
+      float: right;
+    }
+    .jw-text-duration,
+    .jw-text-elapsed {
+      color: @white;
+    }
+  }
+
+  .overlay .media-metadata {
+    display: none;
+  }
+}
+
+/* Flags */
+
+.flag-seek.content-state-playback,
+.flag-seek.content-state-buffering {
+  .overlay {
+    display: block;
+    .media-metadata {
+      display: none;
+    }
+    .jw-cast-controlbar {
+      display: table;
+    }
+  }
+}
+
+/* -------------------------- */
+/*  APP LOADING & IDLE        */
+/* -------------------------- */
+
+span.jw-cast-ready {
+  font-size: 1.56vw; 
+  font-weight: 200;
+  position: relative;
+  display: none;
+  top: 45%;
+  color: @light-grey;
+}
+
+.logo {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-image: url('/assets/jw-logo-white.svg');
+  height: 13.88vh;
+  position: relative;
+  top: 15%;
+  margin: 0 auto;
+  display: none;
+}
+
+.jw-icon-buffer:before {
+  content: "\e601";
+  color: @accent;
+  font-size: 14.81vh;
+}
+
+.jw-icon-buffer {
+  display: none;
+  font-family: 'jw-icons';  
+  margin: 0 auto;
+  position: relative;
+  top: 40%;
+  width: 14.81vh;
+  height: 14.81vh;
+  -webkit-animation:spin 2s linear infinite;
+  -moz-animation:spin 2s linear infinite;
+  animation:spin 2s linear infinite;
+}
+
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
+/* -------------------------- */
+/*  CONTENT LOADING           */
+/* -------------------------- */
+
+.overlay {
+  padding: 5.55vh 0;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  display: none;
+}
+
+.media-metadata {
+  display: flex;
+  flex-direction: row;
+  height: 9.25vh;
+  width: 90%;
+  margin: 0 auto;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.jw-thumb-container {
+  width: 6.25vw;
+  float: left;
+  display: block;
+  margin-right: 1.56vw;
+}
+
+.media-metadata-info {
+  text-align: left;
+}
+
+.jw-media-title {
+  font-size: 1.09vw;
+  color: @white;
+}
+.jw-media-description {
+  font-size: 0.88vw;
+  margin-top: 0.92vh;
+  color: #999;
+}
+
+.content-buffer {
+  width: 90%;
+  height: 0.28vh;
+  display: block;
+  margin: 0 auto;
+  background-color: #475470;
+  position: relative;
+  display: none;
+}
+
+.loading-bar {
+  background-color: @accent;
+  position: absolute;
+  right:100%;
+  width:30%;
+  height:0.28vh;
+
+  -webkit-animation: move 1s steps(50) infinite alternate;
+  -moz-animation: move 1s steps(50) infinite alternate;
+  -ms-animation: move 1s steps(50) infinite alternate;
+  -o-animation: move 1s steps(50) infinite alternate;
+  animation: move 1s steps(50) infinite alternate;
+
+  transition-timing-function: ease-out;
+}
+
+@keyframes move {
+  from { right: 70%; }
+  to   { right: 0%; }
+}
+@-o-keyframes move {
+  from { right: 50%; }
+  to   { right: 0%; }
+}
+@-ms-keyframes move {
+  from { right: 50%; }
+  to   { right: 0%; }
+}
+@-webkit-keyframes move {
+  from { right: 50%; }
+  to   { right: 0%; }
+}
+@-moz-keyframes move {
+  from { right: 50%; }
+  to   { right: 0%; }
+}
+
+ul.jw-cast-controlbar {
+  width: 90%;
+  text-align: left;
+  padding: 0;
+  margin: 0 auto;
+  display: none;
+  font-family: 'jw-icons';
+}
+
+ul.jw-cast-controlbar li {
+  display: table-cell;
+  padding: 0 1.04vw;
+  vertical-align: middle;
+  font-size: 1.56vw;
+}
+
+ul.jw-cast-controlbar li:first-child {
+  padding-left: 0;
+}
+
+#jw-icon-state {
+  margin-top: 1px;
+}
+
+.jw-icon-pause:before {
+  content: "\E60D";
+  color: @white;
+}
+
+.jw-icon-play:before {
+  content: "\E60E";
+  color: @white;
+}
+
+.jw-text-elapsed, .jw-text-duration {
+  color: #ccc;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 300;
+}
+
+.jw-timeslider {
+  width: 85%;
+  vertical-align: middle;
+}
+
+.jw-progress-bar {
+  background-color: @accent;
+  height: 0.52vw;
+}
+
+/* -------------------------- */
+/*  CONTENT -NEXT UP ITEM     */
+/* -------------------------- */
+
+.content-state-nextup .jw-thumb-container {
+  width: 10.41vw;
+  float: left;
+  display: block;
+  margin-right: 1.56vw;
+}
+
+.jw-nextup-timer {
+  color: @white;
+  margin-top: 1.85vh;
+  font-size: 0.88vw;
+  display: none;
+}
+.jw-media-title strong {
+  color: @text-accent;
+  font-weight: 400;
+}
+
+.jw-nextup-timer strong {
+  color: @accent;
+  font-weight: 300;
+}
+
+/* -------------------------- */
+/*  APP STATE ERROR           */
+/* -------------------------- */
+
+.jw-error-message {
+  display: none;
+  position: relative;
+  top: 30%;
+  font-size: 1.56vw;
+  color: @white;
+}
+
+/* -------------------------- */
+/*  JW7 Overrides             */
+/* -------------------------- */
+
+#player.jw-state-error .jw-title .jw-title-primary {
+  display: none;
+}

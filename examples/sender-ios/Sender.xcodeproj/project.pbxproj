@@ -1,0 +1,421 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		3816813E1E3BAE36008196E7 /* Sender-Universal */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 3816813F1E3BAE36008196E7 /* Build configuration list for PBXAggregateTarget "Sender-Universal" */;
+			buildPhases = (
+				381681421E3BAE3D008196E7 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = "Sender-Universal";
+			productName = "Sender-Universal";
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		38E6849F1E37F02200DEE59B /* Sender.h in Headers */ = {isa = PBXBuildFile; fileRef = 38E6849D1E37F02200DEE59B /* Sender.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		38E684B71E37FF1100DEE59B /* AdsManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 38E684B51E37FF1100DEE59B /* AdsManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		38E684B81E37FF1100DEE59B /* AdsManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 38E684B61E37FF1100DEE59B /* AdsManager.m */; };
+		38E684BB1E37FF4200DEE59B /* AdsManagerDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = 38E684B91E37FF4200DEE59B /* AdsManagerDelegate.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		38E684BF1E37FF8C00DEE59B /* AdMeta.h in Headers */ = {isa = PBXBuildFile; fileRef = 38E684BD1E37FF8C00DEE59B /* AdMeta.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		38E684C01E37FF8C00DEE59B /* AdMeta.m in Sources */ = {isa = PBXBuildFile; fileRef = 38E684BE1E37FF8C00DEE59B /* AdMeta.m */; };
+		38E684C31E38025C00DEE59B /* AdCompanion.h in Headers */ = {isa = PBXBuildFile; fileRef = 38E684C11E38025C00DEE59B /* AdCompanion.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		38E684C41E38025C00DEE59B /* AdCompanion.m in Sources */ = {isa = PBXBuildFile; fileRef = 38E684C21E38025C00DEE59B /* AdCompanion.m */; };
+		38EC83101E38F1A500BB5FDE /* GoogleCast.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 38EC830F1E38F1A500BB5FDE /* GoogleCast.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		38E6849A1E37F02200DEE59B /* Sender.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Sender.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		38E6849D1E37F02200DEE59B /* Sender.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Sender.h; sourceTree = "<group>"; };
+		38E6849E1E37F02200DEE59B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		38E684B51E37FF1100DEE59B /* AdsManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AdsManager.h; sourceTree = "<group>"; };
+		38E684B61E37FF1100DEE59B /* AdsManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AdsManager.m; sourceTree = "<group>"; };
+		38E684B91E37FF4200DEE59B /* AdsManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AdsManagerDelegate.h; sourceTree = "<group>"; };
+		38E684BD1E37FF8C00DEE59B /* AdMeta.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AdMeta.h; sourceTree = "<group>"; };
+		38E684BE1E37FF8C00DEE59B /* AdMeta.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AdMeta.m; sourceTree = "<group>"; };
+		38E684C11E38025C00DEE59B /* AdCompanion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AdCompanion.h; sourceTree = "<group>"; };
+		38E684C21E38025C00DEE59B /* AdCompanion.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AdCompanion.m; sourceTree = "<group>"; };
+		38EC830F1E38F1A500BB5FDE /* GoogleCast.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GoogleCast.framework; path = Frameworks/GoogleCast.framework; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		38E684961E37F02200DEE59B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38EC83101E38F1A500BB5FDE /* GoogleCast.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		38E684901E37F02200DEE59B = {
+			isa = PBXGroup;
+			children = (
+				38E6849C1E37F02200DEE59B /* Sender */,
+				38E6849B1E37F02200DEE59B /* Products */,
+				38EC830C1E38F18800BB5FDE /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		38E6849B1E37F02200DEE59B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				38E6849A1E37F02200DEE59B /* Sender.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		38E6849C1E37F02200DEE59B /* Sender */ = {
+			isa = PBXGroup;
+			children = (
+				38E6849D1E37F02200DEE59B /* Sender.h */,
+				38E6849E1E37F02200DEE59B /* Info.plist */,
+				38E684B51E37FF1100DEE59B /* AdsManager.h */,
+				38E684B61E37FF1100DEE59B /* AdsManager.m */,
+				38E684B91E37FF4200DEE59B /* AdsManagerDelegate.h */,
+				38E684BD1E37FF8C00DEE59B /* AdMeta.h */,
+				38E684BE1E37FF8C00DEE59B /* AdMeta.m */,
+				38E684C11E38025C00DEE59B /* AdCompanion.h */,
+				38E684C21E38025C00DEE59B /* AdCompanion.m */,
+			);
+			path = Sender;
+			sourceTree = "<group>";
+		};
+		38EC830C1E38F18800BB5FDE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				38EC830F1E38F1A500BB5FDE /* GoogleCast.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		38E684971E37F02200DEE59B /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38E684BB1E37FF4200DEE59B /* AdsManagerDelegate.h in Headers */,
+				38E6849F1E37F02200DEE59B /* Sender.h in Headers */,
+				38E684BF1E37FF8C00DEE59B /* AdMeta.h in Headers */,
+				38E684C31E38025C00DEE59B /* AdCompanion.h in Headers */,
+				38E684B71E37FF1100DEE59B /* AdsManager.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		38E684991E37F02200DEE59B /* Sender */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 38E684A21E37F02200DEE59B /* Build configuration list for PBXNativeTarget "Sender" */;
+			buildPhases = (
+				38E684951E37F02200DEE59B /* Sources */,
+				38E684961E37F02200DEE59B /* Frameworks */,
+				38E684971E37F02200DEE59B /* Headers */,
+				38E684981E37F02200DEE59B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Sender;
+			productName = Sender;
+			productReference = 38E6849A1E37F02200DEE59B /* Sender.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		38E684911E37F02200DEE59B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0820;
+				ORGANIZATIONNAME = "JW Player";
+				TargetAttributes = {
+					3816813E1E3BAE36008196E7 = {
+						CreatedOnToolsVersion = 8.2.1;
+						DevelopmentTeam = WX87M56X5N;
+						ProvisioningStyle = Automatic;
+					};
+					38E684991E37F02200DEE59B = {
+						CreatedOnToolsVersion = 8.2.1;
+						DevelopmentTeam = WX87M56X5N;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 38E684941E37F02200DEE59B /* Build configuration list for PBXProject "Sender" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 38E684901E37F02200DEE59B;
+			productRefGroup = 38E6849B1E37F02200DEE59B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				38E684991E37F02200DEE59B /* Sender */,
+				3816813E1E3BAE36008196E7 /* Sender-Universal */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		38E684981E37F02200DEE59B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		381681421E3BAE3D008196E7 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "######################\n# Options\n######################\n\nREVEAL_ARCHIVE_IN_FINDER=false\nFRAMEWORK_NAME=\"${PROJECT_NAME}\"\nSIMULATOR_LIBRARY_PATH=\"${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${FRAMEWORK_NAME}.framework\"\nDEVICE_LIBRARY_PATH=\"${BUILD_DIR}/${CONFIGURATION}-iphoneos/${FRAMEWORK_NAME}.framework\"\nUNIVERSAL_LIBRARY_DIR=\"${BUILD_DIR}/${CONFIGURATION}-iphoneuniversal\"\nFRAMEWORK=\"${UNIVERSAL_LIBRARY_DIR}/${FRAMEWORK_NAME}.framework\"\n\n\n######################\n# Build Frameworks\n######################\n\nxcodebuild -project ${PROJECT_NAME}.xcodeproj -target ${PROJECT_NAME} -sdk iphonesimulator -configuration ${CONFIGURATION} clean build CONFIGURATION_BUILD_DIR=${BUILD_DIR}/${CONFIGURATION}-iphonesimulator 2>&1\n\nxcodebuild -project ${PROJECT_NAME}.xcodeproj -target ${PROJECT_NAME} -sdk iphoneos -configuration ${CONFIGURATION} clean build CONFIGURATION_BUILD_DIR=${BUILD_DIR}/${CONFIGURATION}-iphoneos 2>&1\n\n######################\n# Create directory for universal\n######################\n\nrm -rf \"${UNIVERSAL_LIBRARY_DIR}\"\nmkdir \"${UNIVERSAL_LIBRARY_DIR}\"\nmkdir \"${FRAMEWORK}\"\n\n######################\n# Copy files Framework\n######################\n\ncp -r \"${DEVICE_LIBRARY_PATH}/.\" \"${FRAMEWORK}\"\n\n######################\n# Make an universal binary\n######################\n\nlipo \"${SIMULATOR_LIBRARY_PATH}/${FRAMEWORK_NAME}\" \"${DEVICE_LIBRARY_PATH}/${FRAMEWORK_NAME}\" -create -output \"${FRAMEWORK}/${FRAMEWORK_NAME}\" | echo\n\n# For Swift framework, Swiftmodule needs to be copied in the universal framework\nif [ -d \"${SIMULATOR_LIBRARY_PATH}/Modules/${FRAMEWORK_NAME}.swiftmodule/\" ]; then\ncp -f ${SIMULATOR_LIBRARY_PATH}/Modules/${FRAMEWORK_NAME}.swiftmodule/* \"${FRAMEWORK}/Modules/${FRAMEWORK_NAME}.swiftmodule/\" | echo\n                                                                      fi\n                                                                      \n                                                                      if [ -d \"${DEVICE_LIBRARY_PATH}/Modules/${FRAMEWORK_NAME}.swiftmodule/\" ]; then\n                                                                      cp -f ${DEVICE_LIBRARY_PATH}/Modules/${FRAMEWORK_NAME}.swiftmodule/* \"${FRAMEWORK}/Modules/${FRAMEWORK_NAME}.swiftmodule/\" | echo\n                                                                      fi\n                                                                      \n                                                                      ######################\n                                                                      # On Release, copy the result to release directory\n                                                                      ######################\n                                                                      OUTPUT_DIR=\"${PROJECT_DIR}/Output/${FRAMEWORK_NAME}-${CONFIGURATION}-iphoneuniversal/\"\n                                                                      \n                                                                      rm -rf \"$OUTPUT_DIR\"\n                                                                      mkdir -p \"$OUTPUT_DIR\"\n                                                                      \n                                                                      cp -r \"${FRAMEWORK}\" \"$OUTPUT_DIR\"\n                                                                      \n                                                                      if [ ${REVEAL_ARCHIVE_IN_FINDER} = true ]; then\n                                                                      open \"${OUTPUT_DIR}/\"\n                                                                      fi";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		38E684951E37F02200DEE59B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38E684B81E37FF1100DEE59B /* AdsManager.m in Sources */,
+				38E684C41E38025C00DEE59B /* AdCompanion.m in Sources */,
+				38E684C01E37FF8C00DEE59B /* AdMeta.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		381681401E3BAE36008196E7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = WX87M56X5N;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		381681411E3BAE36008196E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = WX87M56X5N;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		38E684A01E37F02200DEE59B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		38E684A11E37F02200DEE59B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		38E684A31E37F02200DEE59B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = WX87M56X5N;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
+				INFOPLIST_FILE = Sender/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-isystem",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"-isystem",
+					"\"${PODS_ROOT}/Headers/Public/google-cast-sdk\"",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jwplayer.showcase.sender;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		38E684A41E37F02200DEE59B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = WX87M56X5N;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
+				INFOPLIST_FILE = Sender/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-isystem",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"-isystem",
+					"\"${PODS_ROOT}/Headers/Public/google-cast-sdk\"",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jwplayer.showcase.sender;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3816813F1E3BAE36008196E7 /* Build configuration list for PBXAggregateTarget "Sender-Universal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				381681401E3BAE36008196E7 /* Debug */,
+				381681411E3BAE36008196E7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		38E684941E37F02200DEE59B /* Build configuration list for PBXProject "Sender" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38E684A01E37F02200DEE59B /* Debug */,
+				38E684A11E37F02200DEE59B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		38E684A21E37F02200DEE59B /* Build configuration list for PBXNativeTarget "Sender" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38E684A31E37F02200DEE59B /* Debug */,
+				38E684A41E37F02200DEE59B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 38E684911E37F02200DEE59B /* Project object */;
+}

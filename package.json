@@ -1,0 +1,20 @@
+{
+  "name": "jwplayer-cast-receiver",
+  "version": "1.0.0",
+  "description": "JW Player Custom Chromecast Receiver",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Rik Heijdens",
+  "license": "ISC",
+  "dependencies": {
+    "del": "^2.2.2",
+    "gulp": "^3.9.1",
+    "gulp-connect": "^5.0.0",
+    "gulp-less": "^3.3.0",
+    "gulp-mustache": "^2.3.0",
+    "rollup": "^0.36.4",
+    "rollup-plugin-uglify": "^1.0.1",
+    "uglify-js": "github:mishoo/UglifyJS2#harmony"
+  }
+}
