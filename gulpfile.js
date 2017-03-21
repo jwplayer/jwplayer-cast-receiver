@@ -18,77 +18,77 @@ const DEST_RELEASE = 'bin-release/';
 const PLAYER_VERSION = '7.8.7';
 
 function buildTarget(target) {
-  const DEST = target == 'debug' ? DEST_DEBUG : DEST_RELEASE;
+    const DEST = target == 'debug' ? DEST_DEBUG : DEST_RELEASE;
 
-  // Create destination dir if not exists.
-  // mkdir -p will create intermediate directories as required.
-  child_process.exec('mkdir -p ' + DEST + 'assets/');
+    // Create destination dir if not exists.
+    // mkdir -p will create intermediate directories as required.
+    child_process.exec('mkdir -p ' + DEST + 'assets/');
 
-  let useDebugPlayer = false;
-  if (target === 'debug') {
-    try {
-      // Check if we can copy the player from ../jwplayer-commercial/bin-debug/
-      fs.accessSync('../jwplayer-commercial/bin-debug/');
-      useDebugPlayer = true;
-    } catch (err) {
-      console.warn('Debuggable player not found: Building against CDN player.');
+    let useDebugPlayer = false;
+    if (target === 'debug') {
+        try {
+            // Check if we can copy the player from ../jwplayer-commercial/bin-debug/
+            fs.accessSync('../jwplayer-commercial/bin-debug/');
+            useDebugPlayer = true;
+        } catch (err) {
+            console.warn('Debuggable player not found: Building against CDN player.');
+        }
     }
-  }
 
-  if (useDebugPlayer) {
-    // Copy debug player.
-    child_process.exec('mkdir -p ' + DEST + 'libs/');
-    child_process.exec('cp -R ../jwplayer-commercial/bin-debug/ ' + DEST + 'libs/');
-  }
-
-  // Copy assets
-  child_process.exec('cp -r src/assets/* ' + DEST + 'assets/');
-
-  // Render HTML
-  gulp.src('./src/*.html')
-    .pipe(mustache({
-      jwplayer: useDebugPlayer ? 'libs/jwplayer.js' : `//p.jwpcdn.com/player/v/${PLAYER_VERSION}/jwplayer.js`
-    }))
-    .pipe(gulp.dest(DEST));
-
-  // Render LESS
-  gulp.src('./src/style/**/*.less')
-    .pipe(less({
-      compress: target == 'release'
-    }))
-    .pipe(gulp.dest(DEST + 'css/'));
-
-  // Minify release builds
-  let plugins = [];
-  if (target == 'release') {
-    plugins.push(uglify({}, minifier));
-  }
-
-  // Rollup JS
-  return rollup.rollup({
-    entry: 'src/js/main.js',
-    plugins: plugins,
-    globals: {
-      jwplayer: 'jwplayer',
-      cast: 'cast',
-      google: 'google'
+    if (useDebugPlayer) {
+        // Copy debug player.
+        child_process.exec('mkdir -p ' + DEST + 'libs/');
+        child_process.exec('cp -R ../jwplayer-commercial/bin-debug/ ' + DEST + 'libs/');
     }
-  }).then((bundle) => {
-    bundle.write({
-      //sourceMap: target != 'release',
-      dest: DEST + 'app.js',
-      format: 'iife',
-      moduleName: 'JWCast'
-    });
-  });
+
+    // Copy assets
+    child_process.exec('cp -r src/assets/* ' + DEST + 'assets/');
+
+    // Render HTML
+    gulp.src('./src/*.html')
+        .pipe(mustache({
+            jwplayer: useDebugPlayer ? 'libs/jwplayer.js' : `//p.jwpcdn.com/player/v/${PLAYER_VERSION}/jwplayer.js`
+        }))
+        .pipe(gulp.dest(DEST));
+
+    // Render LESS
+    gulp.src('./src/style/**/*.less')
+        .pipe(less({
+            compress: target == 'release'
+        }))
+        .pipe(gulp.dest(DEST + 'css/'));
+
+    // Minify release builds
+    let plugins = [];
+    if (target == 'release') {
+        plugins.push(uglify({}, minifier));
+    }
+
+    // Rollup JS
+    return rollup.rollup({
+            entry: 'src/js/main.js',
+            plugins: plugins,
+            globals: {
+                jwplayer: 'jwplayer',
+                cast: 'cast',
+                google: 'google'
+            }
+        }).then((bundle) => {
+            bundle.write({
+            //sourceMap: target != 'release',
+            dest: DEST + 'app.js',
+            format: 'iife',
+            moduleName: 'JWCast'
+        });
+});
 }
 
 // Serves bin-debug/ and config/ at localhost:8080.
 gulp.task('serve', () => {
-  connect.server({
+    connect.server({
     root: ['bin-debug', 'config'],
     port: 8080
-  });
+});
 });
 
 // Cleanup task, deletes bin-debug and bin-release.
@@ -96,7 +96,7 @@ gulp.task('clean', () => { return del(['bin-debug/', 'bin-release/']) });
 
 // Watch task: will recompile when changes have been detected.
 gulp.task('watch', ['clean', 'build'], () => {
-  gulp.watch(['src/**/*.js', 'src/*.html', 'src/style/**/*.less'], ['build']);
+    gulp.watch(['src/**/*.js', 'src/*.html', 'src/style/**/*.less'], ['build']);
 });
 
 // Task invoked when gulp is being executed without parameters.
