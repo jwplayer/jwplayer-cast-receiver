@@ -7,11 +7,12 @@ import TimeOutHandler from './utils/timeouthandler';
 
 export const APP_VERSION = '1.0.0';
 
+/* eslint no-unused-vars: 0*/
+
 export default function JWCastApp(element, config) {
     // Create an event bus.
     let events = new EventBus();
 
-    // Activity Timeout Handler.
     let timeoutHandler;
 
     // Create a receiver manager and apply overrides.
@@ -21,7 +22,7 @@ export default function JWCastApp(element, config) {
 
         // Create a timeout handler.
         timeoutHandler = new TimeOutHandler(events, receiverManager);
-    }
+    };
 
     receiverManager.onSenderDisconnected = function(event) {
         // When the last or only sender is connected to a receiver,
@@ -40,7 +41,7 @@ export default function JWCastApp(element, config) {
     let uiController = new UIController(element, events, config, mediaManager);
 
     // Create a related controller.
-    if (typeof(config.recommendationsPlaylist) === 'string') {
+    if (typeof (config.recommendationsPlaylist) === 'string') {
         let relatedController = new RelatedController(config, events, mediaManager);
     }
 

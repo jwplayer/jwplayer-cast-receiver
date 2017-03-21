@@ -6,7 +6,11 @@ export default class ConfigLoader {
         return new Promise((resolve, reject) => {
             let configUrl = DEBUG ? `./${appName}/config.json` : `https://${appName}.jwpapp.com/config.json`;
             Http.get(configUrl).then((config) => {
-                this.validateConfig(config) ? resolve(config) : reject('Invalid configuration');
+                if (this.validateConfig(config)) {
+                    resolve(config);
+                } else {
+                    reject('Invalid configuration');
+                }
             }, reject);
         });
     }
@@ -17,7 +21,7 @@ export default class ConfigLoader {
         if (!config.key) {
             valid = false;
         }
-        if (typeof(config.autoAdvanceWarningOffset) !== 'number') {
+        if (typeof (config.autoAdvanceWarningOffset) !== 'number') {
             // Set a default offset.
             config.autoAdvanceWarningOffset = 10;
         }

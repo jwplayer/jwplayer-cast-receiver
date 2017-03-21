@@ -12,8 +12,8 @@ export default function TimeOutHandler(events, receiverManager) {
     events.subscribe(USER_ACTIVITY, handleActivity);
     events.subscribe(STATE_CHANGE, (event) => {
         playerState = event.newState;
-    handleActivity();
-});
+        handleActivity();
+    });
 
     function handleActivity() {
         window.clearTimeout(timeoutId);

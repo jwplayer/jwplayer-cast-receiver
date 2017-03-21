@@ -29,14 +29,16 @@ export const USER_ACTIVITY_TIMEOUT = 5000;
  */
 function applyConfig(config) {
     // TODO: apply more config parameters.
-    if (typeof(config.theme) === 'string' && config.theme.length > 0) {
+    if (typeof (config.theme) === 'string' && config.theme.length > 0) {
         document.body.className = `theme-${UIUtil.escapeHtml(config.theme)}`;
     }
-    if (typeof(config.logoUrl) === 'string' && config.logoUrl.length > 0) {
+    if (typeof (config.logoUrl) === 'string' && config.logoUrl.length > 0) {
         Array.from(document.getElementsByClassName('logo'))
-            .forEach(element => element.style.backgroundImage = `url(${config.logoUrl})`);
+            .forEach(element => {
+                element.style.backgroundImage = `url(${config.logoUrl})`;
+            });
     }
-    if (typeof(config.siteName) === 'string' && config.siteName.length > 0) {
+    if (typeof (config.siteName) === 'string' && config.siteName.length > 0) {
         document.title = config.siteName;
     }
 }
@@ -124,10 +126,10 @@ export default function UIController(element, events, config, mediaManager) {
 
     function userActivityHandler() {
         clearTimeout(userActivityTimeoutId);
-        removeFlag(Flag.USER_INACTIVE)
+        removeFlag(Flag.USER_INACTIVE);
         userActivityTimeoutId = setTimeout(() => {
-                setFlag(Flag.USER_INACTIVE);
-    }, USER_ACTIVITY_TIMEOUT);
+            setFlag(Flag.USER_INACTIVE);
+        }, USER_ACTIVITY_TIMEOUT);
     }
 
     function checkToggleNextUp(time, duration) {
@@ -136,7 +138,7 @@ export default function UIController(element, events, config, mediaManager) {
             return false;
         }
         return config.autoAdvance && config.autoAdvanceWarningOffset
-            && typeof(config.autoAdvanceWarningOffset) === 'number'
+            && typeof (config.autoAdvanceWarningOffset) === 'number'
             && duration - currentTime <= config.autoAdvanceWarningOffset;
     }
 
@@ -156,9 +158,9 @@ export default function UIController(element, events, config, mediaManager) {
                         // Set the className to content-state-buffering
                         // 2 seconds after the player enters the buffer state.
                         if (playerState == PlayerState.BUFFERING && !adPlaying) {
-                        setState(UIState.CONTENT_STATE_BUFFERING);
-                    }
-                }, 2000);
+                            setState(UIState.CONTENT_STATE_BUFFERING);
+                        }
+                    }, 2000);
                 }
                 break;
             case PlayerState.IDLE:
@@ -168,6 +170,8 @@ export default function UIController(element, events, config, mediaManager) {
             case PlayerState.PLAYING:
                 stateIcon.className = 'jw-icon-play';
                 setState(UIState.CONTENT_STATE_PLAYING);
+                break;
+            default:
                 break;
         }
     }
@@ -185,114 +189,123 @@ export default function UIController(element, events, config, mediaManager) {
     events.subscribe(Events.MEDIA_LOAD, (event) => {
         // Cancel any UI transitions if scheduled.
         errorElement.textContent = '';
-    window.clearTimeout(stateTransitionTimeoutId);
-    removeFlag(Flag.RECOVERABLE_ERROR);
-    setState(UIState.CONTENT_STATE_LOADING);
-    currentItem = event.item;
-    mediaOverlay.updateContentProgress(0, 0);
-    loadCurrentItemMetadata();
-});
+        window.clearTimeout(stateTransitionTimeoutId);
+        removeFlag(Flag.RECOVERABLE_ERROR);
+        setState(UIState.CONTENT_STATE_LOADING);
+        currentItem = event.item;
+        mediaOverlay.updateContentProgress(0, 0);
+        loadCurrentItemMetadata();
+    });
 
     events.subscribe(Events.STATE_CHANGE, (event) => {
         playerState = event.newState;
-    if (playerState == PlayerState.IDLE) {
-        setState(UIState.APP_STATE_IDLE);
-    } else if (uiState != UIState.CONTENT_STATE_NEXTUP
+        if (playerState == PlayerState.IDLE) {
+            setState(UIState.APP_STATE_IDLE);
+        } else if (uiState != UIState.CONTENT_STATE_NEXTUP
         || (playerState != PlayerState.PLAYING
         && uiState == UIState.CONTENT_STATE_NEXTUP)) {
-        setUIStateToPlayerState(playerState);
-    }
-});
+            setUIStateToPlayerState(playerState);
+        }
+    });
 
     events.subscribe(Events.MEDIA_TIME, event => {
         if (event.currentTime < currentTime) {
         // Handle time updates that are smaller than
         // what we we know always as user activity.
-        userActivityHandler();
-        if (mediaOverlay.displayingNextUp) {
+            userActivityHandler();
+            if (mediaOverlay.displayingNextUp) {
             // Hide the next up overlay if a user seeks back.
-            loadCurrentItemMetadata();
-            setUIStateToPlayerState(playerState);
+                loadCurrentItemMetadata();
+                setUIStateToPlayerState(playerState);
+            }
         }
-    }
-    currentTime = event.currentTime;
-    mediaOverlay.updateContentProgress(event.currentTime, event.duration);
+        currentTime = event.currentTime;
+        mediaOverlay.updateContentProgress(event.currentTime, event.duration);
 
-    let shouldDisplayNextUp = checkToggleNextUp(currentTime, event.duration);
+        let shouldDisplayNextUp = checkToggleNextUp(currentTime, event.duration);
 
     // Check whether the state should be updated to display the next up overlay.
-    if (!mediaOverlay.displayingNextUp && shouldDisplayNextUp) {
-        let nextQueueItem = mediaManager.getNextItemInQueue();
-        if (nextQueueItem) {
-            mediaOverlay.updateMediaMeta(nextQueueItem.media.metadata, true);
+        if (!mediaOverlay.displayingNextUp && shouldDisplayNextUp) {
+            let nextQueueItem = mediaManager.getNextItemInQueue();
+            if (nextQueueItem) {
+                mediaOverlay.updateMediaMeta(nextQueueItem.media.metadata, true);
+            }
         }
-    }
 
-    if (shouldDisplayNextUp && uiState != UIState.CONTENT_STATE_NEXTUP) {
-        setState(UIState.CONTENT_STATE_NEXTUP);
-    }
-});
+        if (shouldDisplayNextUp && uiState != UIState.CONTENT_STATE_NEXTUP) {
+            setState(UIState.CONTENT_STATE_NEXTUP);
+        }
+    });
 
     events.subscribe(Events.USER_ACTIVITY, userActivityHandler);
-    events.subscribe(Events.QUEUE_LOAD, event => queueRepeatMode = event.queueRepeatMode);
-    events.subscribe(Events.QUEUE_UPDATE, event => {
+    events.subscribe(Events.QUEUE_LOAD, event => {
+        queueRepeatMode = event.queueRepeatMode;
+        return queueRepeatMode;
+    });
+    events.subscribe(Events.QUEUE_UPDATE, () => {
         if (mediaOverlay.displayingNextUp) {
-        let nextQueueItem = mediaManager.getNextItemInQueue();
-        mediaOverlay.updateMediaMeta(nextQueueItem.media.metadata, true);
-    }
-});
+            let nextQueueItem = mediaManager.getNextItemInQueue();
+            mediaOverlay.updateMediaMeta(nextQueueItem.media.metadata, true);
+        }
+    });
 
     // Flag toggling.
-    events.subscribe(Events.MEDIA_SEEK, event => setFlag(Flag.SEEK));
-    events.subscribe(Events.MEDIA_SEEKED, event => removeFlag(Flag.SEEK));
+    events.subscribe(Events.MEDIA_SEEK, () => setFlag(Flag.SEEK));
+    events.subscribe(Events.MEDIA_SEEKED, () => removeFlag(Flag.SEEK));
 
     events.subscribe(Events.AD_IMPRESSION, event => {
         adPlaying = true;
-    let meta = event.meta;
-    adPodIndex = meta.sequence ? meta.sequence : 1;
-    adPodLength = meta.podcount ? meta.podcount : 1;
-    setState(UIState.AD_PLAYBACK);
-});
+        let meta = event.meta;
+        adPodIndex = meta.sequence ? meta.sequence : 1;
+        adPodLength = meta.podcount ? meta.podcount : 1;
+        setState(UIState.AD_PLAYBACK);
+    });
 
-    events.subscribe(Events.AD_PLAY, event => stateIcon.className = 'jw-icon-play');
-    events.subscribe(Events.AD_PAUSE, event => stateIcon.className = 'jw-icon-pause');
+    events.subscribe(Events.AD_PLAY, () => {
+        stateIcon.className = 'jw-icon-play';
+    });
+    events.subscribe(Events.AD_PAUSE, () => {
+        stateIcon.className = 'jw-icon-pause';
+    });
 
     events.subscribe(Events.AD_TIME, event => {
         mediaOverlay.updateAdProgress(Math.round(event.duration - event.position), adPodIndex, adPodLength);
-});
+    });
 
-    events.subscribe(Events.AD_COMPLETE, event => {
-        adPlaying = false
+    events.subscribe(Events.AD_COMPLETE, () => {
+        adPlaying = false;
         // Force the progress bar to back into 'content mode'.
         mediaOverlay.updateContentProgress(0, 0);
-    setUIStateToPlayerState(PlayerState.BUFFERING);
-});
-    events.subscribe(Events.AD_ERROR, event => adPlaying = false);
+        setUIStateToPlayerState(PlayerState.BUFFERING);
+    });
+    events.subscribe(Events.AD_ERROR, () => {
+        adPlaying = false;
+    });
 
     events.subscribe(Events.MEDIA_ERROR, event => {
         errorElement.textContent = event.error.message;
 
-    if (event.willAdvance && event.nextItem) {
-        setFlag(Flag.RECOVERABLE_ERROR);
-        mediaOverlay.updateMediaMeta(event.nextItem.media.metadata, true);
-        const DURATION = 5;
-        let time = Date.now();
-        let updateCountdown = function() {
-            let position = (Date.now() - time) / 1000;
-            mediaOverlay.updateContentProgress(position, DURATION);
-            if (position < DURATION) {
-                stateTransitionTimeoutId = window.setTimeout(updateCountdown, 1000);
-            }
-        };
-        updateCountdown();
-    } else {
-        stateTransitionTimeoutId = window.setTimeout(() => {
+        if (event.willAdvance && event.nextItem) {
+            setFlag(Flag.RECOVERABLE_ERROR);
+            mediaOverlay.updateMediaMeta(event.nextItem.media.metadata, true);
+            const DURATION = 5;
+            let time = Date.now();
+            let updateCountdown = function() {
+                let position = (Date.now() - time) / 1000;
+                mediaOverlay.updateContentProgress(position, DURATION);
+                if (position < DURATION) {
+                    stateTransitionTimeoutId = window.setTimeout(updateCountdown, 1000);
+                }
+            };
+            updateCountdown();
+        } else {
+            stateTransitionTimeoutId = window.setTimeout(() => {
                 setState(UIState.APP_STATE_IDLE);
-    }, 5000);
-    }
+            }, 5000);
+        }
 
     // Set the UI state to error.
-    setState(UIState.APP_STATE_ERROR);
-});
+        setState(UIState.APP_STATE_ERROR);
+    });
 
 }
