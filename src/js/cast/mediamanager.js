@@ -991,16 +991,14 @@ export default function JWMediaManager(receiverManager, container, events, analy
             analytics: analyticsConfig,
         };
 
-        let customMediaData = media.customData;
+        let customMediaData = media.customData || {};
 
-        if (customMediaData && customMediaData.advertising
-            && customMediaData.advertising.client) {
+        if (customMediaData.advertising && customMediaData.advertising.client) {
             playerConfig.advertising = {
                 client: customMediaData.advertising.client
             };
         }
-
-        if (customMediaData && customMediaData.drm) {
+        if (customMediaData.drm) {
             playerConfig.drm = customMediaData.drm;
         }
 
