@@ -235,9 +235,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
         }
     }
 
-  /*
-   * Event Handlers.
-   */
+    /*
+     * Event Handlers.
+     */
 
     function onLoad(event) {
         // TODO: Handle load requests where the actual media
@@ -602,11 +602,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
             ErrorReason.INVALID_COMMAND, event);
     }
 
-  /*
-   * JW Player event handlers.
-   * These are prefixed with 'handle' in order to distuingish them from
-   * Chromecast events.
-   */
+    /*
+     * JW Player event handlers.
+     * These are prefixed with 'handle' in order to distuingish them from
+     * Chromecast events.
+     */
 
     function handleComplete(event) {
         events.publish(Events.MEDIA_COMPLETE, {
@@ -959,9 +959,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
         broadcastStatus();
     }
 
-  /*
-   * Utility functions.
-   */
+    /*
+     * Utility functions.
+     */
 
     /**
      * Loads an item on JW Player.
