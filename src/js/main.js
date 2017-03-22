@@ -1,6 +1,8 @@
 import JWCastApp from './jwcastapp.js';
 import ConfigLoader from './config/loader';
 
+/* eslint no-console: 0*/
+
 // Global debug setting.
 window.DEBUG = jwplayer.version.search(/[0-9]+\.[0-9]+\.[0-9].*\+local\./) != -1;
 
@@ -24,15 +26,15 @@ if (!appName) {
 
 ConfigLoader.getConfig(appName)
     .then((config) => {
-    // Set the player key.
-    jwplayer.key = config.key;
-loadedConfig = config;
-// Check whether we can init the application.
-maybeInit();
-}, error => {
-    console.error(error);
-    exitApp();
-});
+        // Set the player key.
+        jwplayer.key = config.key;
+        loadedConfig = config;
+        // Check whether we can init the application.
+        maybeInit();
+    }, error => {
+        console.error(error);
+        exitApp();
+    });
 
 // Init the application in case the config has been loaded already.
 document.addEventListener('DOMContentLoaded', maybeInit);
@@ -42,7 +44,7 @@ document.addEventListener('DOMContentLoaded', maybeInit);
  */
 function maybeInit() {
     if (!app && loadedConfig && document.readyState != 'loading') {
-        console.log('Initializing the JWCastApp with config %O', loadedConfig);
+        console.info('Initializing the JWCastApp with config %O', loadedConfig);
         // We're good to go! The document is ready and the config has been loaded.
         app = new JWCastApp(document.getElementById('app'), loadedConfig);
     }

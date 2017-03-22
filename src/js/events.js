@@ -25,7 +25,7 @@ export const MEDIA_LOADED = 'mediaLoaded';
 /**
  * Fired when jwplayer.js reports that playback has begun.
  */
-//export const MEDIA_PLAY = 'mediaPlay';
+// export const MEDIA_PLAY = 'mediaPlay';
 
 /**
  * Fired when a SEEK request has been received.
@@ -130,11 +130,11 @@ export default function EventBus() {
                 remove: function() {
                     delete topics[topic][index];
                 }
-            }
+            };
         },
         publish: function(topic, info) {
             // If the topic doesn't exist, or there's no listeners in queue, just leave.
-            if(!hOP.call(topics, topic)) {
+            if (!hOP.call(topics, topic)) {
                 return;
             }
 
@@ -143,5 +143,5 @@ export default function EventBus() {
                 item(info != undefined ? info : {});
             });
         }
-    }
+    };
 }

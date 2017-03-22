@@ -15,7 +15,7 @@ export default function RelatedController(config, events, mediaManager) {
 
     // Calculate the offset at which we need to load the related feed.
     let offset = 0;
-    if (typeof(config.autoAdvanceWarningOffset) === 'number') {
+    if (typeof (config.autoAdvanceWarningOffset) === 'number') {
         offset = config.autoAdvanceWarningOffset + REQUEST_TIMEOUT / 1000;
     }
 
@@ -23,10 +23,11 @@ export default function RelatedController(config, events, mediaManager) {
         events.subscribe(Events.MEDIA_TIME, handleTime);
         events.subscribe(Events.MEDIA_LOADED, event => {
             feedRequested = false;
-        let media = event.media;
-        media.customData && media.customData.mediaid
-            ? currentMediaId = media.customData.mediaid : null;
-    });
+            let media = event.media;
+            if (media.customData && media.customData.mediaid) {
+                currentMediaId = media.customData.mediaidz;
+            }
+        });
     }
 
     function handleTime(event) {
@@ -38,24 +39,22 @@ export default function RelatedController(config, events, mediaManager) {
             return;
         }
 
-        if (event.duration - event.currentTime <= offset
-            && !mediaManager.getNextItemInQueue()) {
+        if (event.duration - event.currentTime <= offset && !mediaManager.getNextItemInQueue()) {
             feedRequested = true;
-            RelatedLoader.load(config.recommendationsPlaylist, currentMediaId)
-                .then(feed => {
+            RelatedLoader.load(config.recommendationsPlaylist, currentMediaId).then(feed => {
                 let mediaQueueItem = getMediaQueueItem(feed.playlist);
-            if (mediaQueueItem) {
-                blacklist.push(mediaQueueItem.media.customData.mediaid);
-                mediaManager.addItemToQueue(mediaQueueItem);
-            }
-        }, error => {
+                if (mediaQueueItem) {
+                    blacklist.push(mediaQueueItem.media.customData.mediaid);
+                    mediaManager.addItemToQueue(mediaQueueItem);
+                }
+            }, error => {
                 console.warn('Error loading recommendations: %O', error);
             });
         }
     }
 
     function getMediaQueueItem(playlist) {
-        let mediaQueueItem;
+        let mediaQueueItem = null;
         if (!playlist) {
             return null;
         }
@@ -67,82 +66,82 @@ export default function RelatedController(config, events, mediaManager) {
         }
 
         playlist.some(item => {
-            let mediaInfo = new cast.receiver.media.MediaInformation;
+            let mediaInfo = new cast.receiver.media.MediaInformation();
 
-        if (blacklist.indexOf(item.mediaid) != -1) {
+            if (blacklist.indexOf(item.mediaid) != -1) {
             // User has already watched this video in this session.
-            return;
-        }
+                return;
+            }
 
         // Find the preferred source.
-        if (!item.sources) {
-            return;
-        }
-
-        let preferredSource;
-        item.sources.some(source => {
-            if (source.type == 'application/vnd.apple.mpegurl') {
-            preferredSource = source;
-            return;
-        }
-    });
-
-        if (!preferredSource) {
-            // HLS not found, try to find the best MP4 rendition.
-            item.sources.forEach(source => {
-                if (cast.receiver.platform.canDisplayType(source.type)) {
-                if (!preferredSource) {
-                    preferredSource = source;
-                } else if (source.width > preferredSource.width) {
-                    preferredSource = source;
-                }
+            if (!item.sources) {
+                return;
             }
-        });
-        }
 
-        if (!preferredSource) {
+            let preferredSource;
+            item.sources.some(source => {
+                if (source.type == 'application/vnd.apple.mpegurl') {
+                    preferredSource = source;
+                    return;
+                }
+            });
+
+            if (!preferredSource) {
+            // HLS not found, try to find the best MP4 rendition.
+                item.sources.forEach(source => {
+                    if (cast.receiver.platform.canDisplayType(source.type)) {
+                        if (!preferredSource) {
+                            preferredSource = source;
+                        } else if (source.width > preferredSource.width) {
+                            preferredSource = source;
+                        }
+                    }
+                });
+            }
+
+            if (!preferredSource) {
             // err: no source found?
-            return;
-        }
-        mediaInfo.contentId = preferredSource.file;
+                return;
+            }
+            mediaInfo.contentId = preferredSource.file;
 
         // Add text tracks.
-        if (item.tracks) {
-            item.tracks.forEach((track, index) => {
-                if (track.kind === 'captions') {
-                let captionTrack = new cast.receiver.media.Track(index, TrackType.TEXT);
-                captionTrack.name = track.label;
-                captionTrack.subtype = TextTrackType.CAPTIONS;
-                captionTrack.trackContentId = track.file;
-                mediaInfo.tracks = mediaInfo.tracks || [];
-                mediaInfo.tracks.push(captionTrack);
+            if (item.tracks) {
+                item.tracks.forEach((track, index) => {
+                    if (track.kind === 'captions') {
+                        let captionTrack = new cast.receiver.media.Track(index, TrackType.TEXT);
+                        captionTrack.name = track.label;
+                        captionTrack.subtype = TextTrackType.CAPTIONS;
+                        captionTrack.trackContentId = track.file;
+                        mediaInfo.tracks = mediaInfo.tracks || [];
+                        mediaInfo.tracks.push(captionTrack);
+                    }
+                });
             }
-        });
-        }
 
-        mediaInfo.streamType = cast.receiver.media.StreamType.NONE;
-        mediaInfo.duration = item.duration;
-        mediaInfo.customData = {
-            mediaid: item.mediaid
-        };
+            mediaInfo.streamType = cast.receiver.media.StreamType.NONE;
+            mediaInfo.duration = item.duration;
+            mediaInfo.customData = {
+                mediaid: item.mediaid
+            };
 
-        mediaInfo.metadata = {
-            metadataType: 0,
-            images: item.image ? [{
+            mediaInfo.metadata = {
+                metadataType: 0,
+                images: item.image ? [{
                     url: item.image,
                     width: 0,
                     height: 0
                 }] : [],
-            title: item.title,
-            subtitle: item.description
-        };
+                title: item.title,
+                subtitle: item.description
+            };
 
-        mediaQueueItem = {
-            media: mediaInfo
-        };
+            mediaQueueItem = {
+                media: mediaInfo
+            };
 
-        return true;
-    });
+            return true;
+        });
 
         return mediaQueueItem;
     }

@@ -9,7 +9,7 @@ export default class AdCompanion {
         this.clickthrough = clickthrough;
     }
 
-    static convertImaCompanions(companions) {
+    static convertImaCompanions() {
         let convertedCompanions = [];
         convertedCompanions.forEach(companionAd => {
             convertedCompanions.push(new AdCompanion(
@@ -20,7 +20,7 @@ export default class AdCompanion {
             null,
             null
         ));
-    });
+        });
         return convertedCompanions;
     }
 
