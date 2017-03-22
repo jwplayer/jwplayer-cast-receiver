@@ -46,7 +46,7 @@ dev           # meta-task that invokes both serve and watch.
 ## Using debug builds
 
 Debug builds will not load configuration files from `https://<appName>.jwpapp.com/config.json`, but from the `config` folder in the repository.
-For example: after you execute `gulp build serve` the receiver will be hosted at `http://localhost:8080`, but if you load that URL it does not know which config file it should load, hence the receiver won't work. In order to load the config from `/config/sample/config.json` you need to set the `appName` parameter to `sample` like this: `http://localhost:8080?appName=sample`.
+For example: after you execute `gulp build serve` the receiver will be hosted at `http://localhost:8080`, but if you load that URL it does not know which config file it should load, hence the receiver won't work. In order to load the config from `/config/sample/config.json` you need to set the `appName` parameter to `sample` like this: `http://localhost:8080?appName=sample`. The JW Player Key must be included in the config.
 
 ## Receiver States
 
