@@ -74,7 +74,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * This object is used to set the flags for which elements in the media
      * status should be serialized.
      */
-        //let mediaStatusFlags = [];
+        // let mediaStatusFlags = [];
 
         // The messageBus used for sending/receiving messages.
     let messageBus = receiverManager.getCastMessageBus(cast.receiver.media.MEDIA_NAMESPACE);
@@ -171,6 +171,8 @@ export default function JWMediaManager(receiverManager, container, events, analy
             case EventType.GET_STATUS:
                 onGetStatus(event);
                 return;
+            default:
+                break;
         }
 
         // We're handling an event that doesn't create a media session
@@ -250,8 +252,8 @@ export default function JWMediaManager(receiverManager, container, events, analy
         createMediaSession();
         loadItem(event.data).then(() => {
             isLoading = false;
-        sendStatus(event.senderId, event.data.requestId);
-    }, (error) => {
+            sendStatus(event.senderId, event.data.requestId);
+        }, (error) => {
             currentRequestId = event.data.requestId;
             handleSetupError(error);
         });
@@ -265,9 +267,6 @@ export default function JWMediaManager(receiverManager, container, events, analy
             playerInstance.stop();
             mediaStatus.idleReason = IdleReason.CANCELLED;
             broadcastStatus();
-            // Invalidate the mediaSession after pushing the status
-            // including idleReason to senders.
-            mediaSession = null;
         } else {
             sendErrorInvalidPlayerState(event);
         }
@@ -310,7 +309,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
                     // for the SEEK event, so that senders can properly corellate
                     // requests and responses.
                     broadcastStatus(event.data.requestId);
-            });
+                });
                 playerInstance.seek(event.data.currentTime);
             }
             if (event.data.resumeState) {
@@ -367,29 +366,29 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
             activeTrackIds.forEach(trackId => {
                 let track = getTrackById(trackId);
-            if (track) {
-                if (track.type == TrackType.TEXT) {
-                    let playerTracks = playerInstance.getCaptionsList();
-                    playerTracks.some((playerTrack, index) => {
-                        if (playerTrack.id == track.trackContentId) {
-                        disableCaptions = false;
-                        if (playerInstance.getCurrentCaptions() != index) {
-                            playerInstance.setCurrentCaptions(index);
-                        }
-                        return true;
-                    }
-                });
-                } else if (track.type == TrackType.AUDIO) {
+                if (track) {
+                    if (track.type == TrackType.TEXT) {
+                        let playerTracks = playerInstance.getCaptionsList();
+                        playerTracks.some((playerTrack, index) => {
+                            if (playerTrack.id == track.trackContentId) {
+                                disableCaptions = false;
+                                if (playerInstance.getCurrentCaptions() != index) {
+                                    playerInstance.setCurrentCaptions(index);
+                                }
+                                return true;
+                            }
+                        });
+                    } else if (track.type == TrackType.AUDIO) {
                     // trackContentId for audio tracks match jwplayer.js's trackIndex.
-                    playerInstance.setCurrentAudioTrack(track.trackContentId);
-                } else if (track.type == TrackType.VIDEO) {
+                        playerInstance.setCurrentAudioTrack(track.trackContentId);
+                    } else if (track.type == TrackType.VIDEO) {
                     // TODO
-                }
-            } else {
+                    }
+                } else {
                 // err: track not found?
                 // TODO: send err invalid request?
-            }
-        });
+                }
+            });
 
             // Disable caption tracks if no active tracks
             // have been supplied.
@@ -411,7 +410,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
         event.data.items.forEach((item, index) => {
             item.itemId = ++index;
-    });
+        });
 
         // Associate it with a queue.
         mediaStatus.items = event.data.items;
@@ -422,12 +421,12 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // Load the first item.
         loadItem(mediaItem)
             .then(() => {
-            isLoading = false;
-        sendStatus(event.senderId, event.data.requestId);
-    }, (error) => {
-            currentRequestId = event.data.requestId;
-            handleSetupError(error);
-        });
+                isLoading = false;
+                sendStatus(event.senderId, event.data.requestId);
+            }, (error) => {
+                currentRequestId = event.data.requestId;
+                handleSetupError(error);
+            });
 
         events.publish(Events.QUEUE_LOAD, {
             items: mediaStatus.items,
@@ -435,7 +434,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
         });
 
         // Update receivers with the new queue.
-        //mediaStatusFlags.push(MediaStatusFlags.QUEUE);
+        // mediaStatusFlags.push(MediaStatusFlags.QUEUE);
     }
 
     function onQueueInsert(event) {
@@ -443,14 +442,14 @@ export default function JWMediaManager(receiverManager, container, events, analy
         let id = 1;
         mediaStatus.items.forEach((item) => {
             if (item.itemId >= id) {
-            id = item.itemId + 1;
-        }
-    });
+                id = item.itemId + 1;
+            }
+        });
 
         // Start numbering from that id.
         event.data.items.forEach((item) => {
             item.itemId = id++;
-    });
+        });
 
         // Check whether items should be added at the end of the queue.
         if (!event.data.insertBefore) {
@@ -523,23 +522,21 @@ export default function JWMediaManager(receiverManager, container, events, analy
         }
         event.data.itemIds.forEach((id) => {
             let idx = findIndexOfItem(id);
-        mediaStatus.items.splice(idx, 1);
-    });
+            mediaStatus.items.splice(idx, 1);
+        });
         if (event.data.currentItemId && event.data.currentItemId != mediaStatus.currentItemId) {
             let nextItem = mediaStatus.items[findIndexOfItem(event.data.currentItemId)];
             nextItem.startTimeOverride = event.data.currentTime;
             loadItem(nextItem).catch(handleSetupError);
-        } else {
-            if (getCurrentQueueIndex() === -1) {
+        } else if (getCurrentQueueIndex() === -1) {
                 // Current queue item has been removed to, stop playback.
-                if (playerInstance) {
-                    playerInstance.stop();
-                } /* else { // err: invalid command ? } */
-            } else {
+            if (playerInstance) {
+                playerInstance.stop();
+            } /* else { // err: invalid command ? } */
+        } else {
                 // Broadcast the new status, because we're not stopping or loading
                 // (which will implicitly trigger a broadcast).
-                broadcastStatus();
-            }
+            broadcastStatus();
         }
     }
 
@@ -608,7 +605,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Chromecast events.
      */
 
-    function handleComplete(event) {
+    function handleComplete() {
         events.publish(Events.MEDIA_COMPLETE, {
             item: mediaStatus.media
         });
@@ -651,7 +648,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
             // Try to play the next item.
             window.setTimeout(() => {
                 loadNextMediaItem();
-        }, ERROR_TIMEOUT);
+            }, ERROR_TIMEOUT);
         }
     }
 
@@ -684,14 +681,14 @@ export default function JWMediaManager(receiverManager, container, events, analy
                     let adSchedule = media.customData.advertising.schedule;
                     Object.keys(adSchedule).forEach(breakId => {
                         let adBreak = adSchedule[breakId];
-                    if (adBreak.offset.indexOf('%') !== -1
+                        if (adBreak.offset.indexOf('%') !== -1
                         && adBreak.offset !== 'post') {
-                        return;
-                    }
-                    let adPosition = adBreak.offset === 'post' ?
+                            return;
+                        }
+                        let adPosition = adBreak.offset === 'post' ?
                         media.duration : offsetTime(adBreak.offset, media.duration);
-                    adBreaks.push(new AdBreakInfo(breakId, adPosition));
-                });
+                        adBreaks.push(new AdBreakInfo(breakId, adPosition));
+                    });
                     mediaStatus.media.breaks = adBreaks;
                 }
             }
@@ -715,25 +712,25 @@ export default function JWMediaManager(receiverManager, container, events, analy
         captionListEvent.tracks.forEach((captionTrack, trackIndex) => {
             if (trackIndex == 0) {
             // trackIndex 0 is always off.
-            return;
-        }
+                return;
+            }
 
-        let newTrack = mediaStatus.media.tracks.length == 0
+            let newTrack = mediaStatus.media.tracks.length == 0
             || !mediaStatus.media.tracks.some(track => track.type == TrackType.TEXT
             && track.trackContentId == captionTrack.id);
 
-        if (newTrack) {
+            if (newTrack) {
             // Build a new cast.receiver.media.Track object, add it to mediaStatus.media.tracks.
-            mediaStatus.media.tracks.push({
-                name: captionTrack.label,
-                trackContentId: captionTrack.id,
-                trackId: generateTrackId(),
-                type: TrackType.TEXT,
-                subtype: TextTrackType.CAPTIONS // TODO: distinguish between CC and SUBTITLES
-            });
-            tracksChanged = true;
-        }
-    });
+                mediaStatus.media.tracks.push({
+                    name: captionTrack.label,
+                    trackContentId: captionTrack.id,
+                    trackId: generateTrackId(),
+                    type: TrackType.TEXT,
+                    subtype: TextTrackType.CAPTIONS // TODO: distinguish between CC and SUBTITLES
+                });
+                tracksChanged = true;
+            }
+        });
 
         if (captionListEvent.track == 0 && !tracksChanged) {
             // If the caption track is disabled, make sure
@@ -758,16 +755,16 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 || !mediaStatus.media.tracks.some(track => track.type == TrackType.AUDIO
                 && track.trackContentId == index);
 
-        if (newTrack) {
-            mediaStatus.media.tracks.push({
-                name: audioTrack.name,
-                trackContentId: index,
-                type: TrackType.AUDIO,
-                trackId: generateTrackId()
-            });
-            tracksChanged = true;
-        }
-    });
+            if (newTrack) {
+                mediaStatus.media.tracks.push({
+                    name: audioTrack.name,
+                    trackContentId: index,
+                    type: TrackType.AUDIO,
+                    trackId: generateTrackId()
+                });
+                tracksChanged = true;
+            }
+        });
 
         if (tracksChanged) {
             updateActiveTracks();
@@ -793,9 +790,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // to adMeta.
         Object.keys(adMeta).forEach(key => {
             if (event[key] !== undefined) {
-            adMeta[key] = event[key];
-        }
-    });
+                adMeta[key] = event[key];
+            }
+        });
         adMeta.title = event.adtitle;
 
         let ad = ima.ad;
@@ -803,10 +800,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // Find the clickThroughUrl using this 'hack' in the ad object.
         Object.keys(ad).some(key => {
             if (ad[key].clickThroughUrl !== undefined) {
-            adMeta.clickthrough = ad[key].clickThroughUrl;
-            return true;
-        }
-    });
+                adMeta.clickthrough = ad[key].clickThroughUrl;
+                return true;
+            }
+        });
 
         let adPodInfo = ad.getAdPodInfo();
         if (adPodInfo) {
@@ -849,24 +846,24 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 // We initialize an array of breaks, but we do not add the breaks
                 // that require the duration to be known.
                 breaks = [];
-                let adSchedule = mediaStatus.media.customData.advertising.schedule;
-                Object.keys(adSchedule).forEach(breakId => {
-                    let adBreak = adSchedule[breakId];
-                if (adBreak.offset.indexOf('%') != -1
+                let schedule = mediaStatus.media.customData.advertising.schedule;
+                Object.keys(schedule).forEach(breakId => {
+                    let adBreak = schedule[breakId];
+                    if (adBreak.offset.indexOf('%') != -1
                     || adBreak.offset === 'post') {
-                    return;
-                }
+                        return;
+                    }
 
-                let breakPosition;
-                if (adBreak.offset == 'pre') {
-                    breakPosition = 0;
-                } else {
-                    breakPosition = adBreak.offset.indexOf(':') != -1 ?
+                    let breakPosition;
+                    if (adBreak.offset == 'pre') {
+                        breakPosition = 0;
+                    } else {
+                        breakPosition = adBreak.offset.indexOf(':') != -1 ?
                         jwplayer.utils.seconds(adBreak.offset) : Number.parseFloat(adBreak.offset);
-                }
-                breaks.push(new AdBreakInfo(breakId, breakPosition));
-                mediaStatus.media.breaks = breaks;
-            });
+                    }
+                    breaks.push(new AdBreakInfo(breakId, breakPosition));
+                    mediaStatus.media.breaks = breaks;
+                });
             }
 
             let breakClips = mediaStatus.media.breakClips || [];
@@ -875,19 +872,19 @@ export default function JWMediaManager(receiverManager, container, events, analy
             let currentBreakId = null;
             Object.keys(adSchedule).some(breakId => {
                 if (adSchedule[breakId].tag == event.tag) {
-                currentBreakId = breakId;
-                return true;
-            }
-        });
+                    currentBreakId = breakId;
+                    return true;
+                }
+            });
 
             // Next find the break by "id" in the current "breaks" array.
             let currentBreak = null;
             breaks.some((adBreak) => {
                 if (adBreak.id == currentBreakId) {
-                currentBreak = adBreak;
-                return true;
-            }
-        });
+                    currentBreak = adBreak;
+                    return true;
+                }
+            });
 
             // Okay, now we should have all the ingredients to build
             // an adBreakClipInfo which we can associate to a "break".
@@ -930,10 +927,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
             // every time update?
             mediaStatus.media.breakClips.some(breakClip => {
                 if (breakClip.id === adBreakStatus.breakClipId) {
-                breakClip.duration = event.duration;
-                return true;
-            }
-        });
+                    breakClip.duration = event.duration;
+                    return true;
+                }
+            });
             // TODO: update duration of the current ad break?
         }
     }
@@ -950,10 +947,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
         mediaStatus.media.breaks.some(adBreak => {
             if (adBreak.breakClipIds
         && adBreak.breakClipIds.indexOf(event.id) != -1) {
-            adBreak.isWatched = true;
-            return true;
-        }
-    });
+                adBreak.isWatched = true;
+                return true;
+            }
+        });
 
         delete mediaStatus.breakStatus;
         broadcastStatus();
@@ -970,102 +967,110 @@ export default function JWMediaManager(receiverManager, container, events, analy
     function loadItem(item) {
         return new Promise((resolve, reject) => {
                 // Broadcast a MEDIA_LOAD event.
-                events.publish(Events.MEDIA_LOAD, {
+            events.publish(Events.MEDIA_LOAD, {
                 item: item
             });
 
-        if (!playerInstance) {
-            playerInstance = jwplayer(container);
-        }
+            if (!playerInstance) {
+                playerInstance = jwplayer(container);
+            }
 
-        let media = item.media ? item.media : item;
-        let playlist = mediaToPlaylist(media);
-        let playerConfig = {
-            primary: 'html5',
-            width: '100%',
-            height: '100%',
-            playlist: playlist,
-            hlshtml: true,
-            autostart: item.autoplay ? item.autoplay : true,
-            controls: false,
-            analytics: analyticsConfig,
-        };
-
-        let customMediaData = media.customData || {};
-
-        if (customMediaData.advertising && customMediaData.advertising.client) {
-            playerConfig.advertising = {
-                client: customMediaData.advertising.client
+            let media = item.media ? item.media : item;
+            let playlist = mediaToPlaylist(media);
+            let playerConfig = {
+                primary: 'html5',
+                width: '100%',
+                height: '100%',
+                playlist: playlist,
+                hlshtml: true,
+                autostart: item.autoplay ? item.autoplay : true,
+                controls: false,
+                analytics: analyticsConfig,
             };
-        }
-        if (customMediaData.drm) {
-            playerConfig.drm = customMediaData.drm;
-        }
 
-        // TODO: set textTrackStyle.
-        // if (playerInstance.getConfig()) {
-        //   playerInstance.stop();
-        // }
-        playerInstance.setup(playerConfig);
+            let customMediaData = media.customData || {};
 
-        mediaStatus.currentTime = 0;
-        if ((item.startTimeOverride || item.startTime) && item.streamType != 'LIVE') {
+            if (customMediaData.advertising && customMediaData.advertising.client) {
+                playerConfig.advertising = {
+                    client: customMediaData.advertising.client
+                };
+            }
+            if (customMediaData.drm) {
+                playerConfig.drm = customMediaData.drm;
+            }
+
+            // TODO: set textTrackStyle.
+            // if (playerInstance.getConfig()) {
+            //   playerInstance.stop();
+            // }
+            playerInstance.setup(playerConfig);
+
+            mediaStatus.currentTime = 0;
+            if ((item.startTimeOverride || item.startTime) && item.streamType != 'LIVE') {
             // TODO: Check for live.
-            let startTime = item.startTimeOverride ? item.startTimeOverride : item.startTime;
-            mediaStatus.currentTime = startTime;
-            playerInstance.seek(startTime);
+                let startTime = item.startTimeOverride ? item.startTimeOverride : item.startTime;
+                mediaStatus.currentTime = startTime;
+                playerInstance.seek(startTime);
             // The startTime can only be overridden once.
-            delete item.startTimeOverride;
-        }
+                delete item.startTimeOverride;
+            }
 
-        mediaStatus.playerState = (item.autoplay || item.autoplay === undefined)
+            mediaStatus.playerState = (item.autoplay || item.autoplay === undefined)
             ? PlayerState.BUFFERING : PlayerState.PAUSED;
-        mediaStatus.media = media;
-        mediaStatus.activeTrackIds = [];
-        // TODO:
-        // Chrome senders might have issues if they receive a status
-        // update with a media.duration of 0 when the player state is set to
-        // playing.
-        mediaStatus.media.duration = mediaStatus.media.duration || 0;
+            mediaStatus.media = media;
+            mediaStatus.activeTrackIds = [];
+            // TODO:
+            // Chrome senders might have issues if they receive a status
+            // update with a media.duration of 0 when the player state is set to
+            // playing.
+            mediaStatus.media.duration = mediaStatus.media.duration || 0;
 
-        // Ensure new media metadata gets pushed to
-        // the senders.
-        //mediaStatusFlags.push(MediaStatusFlags.META);
+            // Ensure new media metadata gets pushed to
+            // the senders.
+            // mediaStatusFlags.push(MediaStatusFlags.META);
 
-        // Update the currentItemId.
-        item.itemId ? mediaStatus.currentItemId = item.itemId
-            : delete mediaStatus.currentItemId;
+            // Update the currentItemId.
+            if (item.itemId) {
+                mediaStatus.currentItemId = item.itemId;
+            } else {
+                delete mediaStatus.currentItemId;
+            }
 
-        registerPlayerStateListeners();
+            registerPlayerStateListeners();
 
-        playerInstance.once('setupError', reject);
-        playerInstance.once('error', reject);
-        if (mediaStatus.media.duration) {
+            playerInstance.once('setupError', reject);
+            playerInstance.once('error', reject);
+            if (mediaStatus.media.duration) {
             // Update ad break info before resolving.
-            initAdBreakInfo(media);
-        }
+                initAdBreakInfo(media);
+            }
 
-        let hasPreRoll = mediaStatus.media.breaks
+            let hasPreRoll = mediaStatus.media.breaks
             && mediaStatus.media.breaks.some(adBreak => {
                 return adBreak.position === 0;
-    });
+            });
 
-        if (hasPreRoll && !mediaStatus.media.duration) {
+            if (hasPreRoll && !mediaStatus.media.duration) {
             // It is impossible to determine the duration
             // before playback.
-            resolve();
-        } else {
+                resolve();
+            } else {
             // Listen for the 'bufferChange' event in order the duration
             // before playback begins.
-            playerInstance.once('bufferChange', event => {
-                mediaStatus.media.duration = event.duration;
-            resolve();
+                playerInstance.once('bufferChange', event => {
+                    mediaStatus.media.duration = event.duration;
+                    resolve();
+                });
+            }
         });
-        }
-    });
     }
 
     function loadNextMediaItem() {
+        let index;
+        let n;
+        let temp;
+        let i;
+
         if (mediaStatus) {
             switch (mediaStatus.repeatMode) {
                 case RepeatMode.REPEAT_OFF:
@@ -1082,11 +1087,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
                         }
                         // Make sure to push the updated queue to connected
                         // senders.
-                        //mediaStatusFlags.push(MediaStatusFlags.QUEUE);
+                        // mediaStatusFlags.push(MediaStatusFlags.QUEUE);
                     }
                     break;
                 case RepeatMode.REPEAT_ALL:
-                    var index = getCurrentQueueIndex();
+                    index = getCurrentQueueIndex();
                     if (index) {
                         if (index < mediaStatus.items.length - 1) {
                             // Play the next item.
@@ -1104,13 +1109,13 @@ export default function JWMediaManager(receiverManager, container, events, analy
                     playerInstance.play(true);
                     break;
                 case RepeatMode.REPEAT_ALL_AND_SHUFFLE:
-                    var index = getCurrentQueueIndex();
+                    index = getCurrentQueueIndex();
                     if (index) {
                         if (index < mediaStatus.items.length - 1) {
                             loadItem(mediaStatus.items[index++]).catch(handleSetupError);
                         } else {
                             // Shuffle time!
-                            let n = mediaStatus.items.length, temp, i;
+                            n = mediaStatus.items.length;
 
                             // Shuffle the queue using Fisher-Yates (O(n)):
                             while (n) {
@@ -1128,7 +1133,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
                             // Make sure to push the updated queue to connected
                             // senders.
-                            //mediaStatusFlags.push(MediaStatusFlags.QUEUE);
+                            // mediaStatusFlags.push(MediaStatusFlags.QUEUE);
                         }
                     }
                     break;
@@ -1155,6 +1160,8 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 case 'play':
                     newPlayerState = PlayerState.PLAYING;
                     break;
+                default:
+                    break;
             }
             let oldState = mediaStatus.playerState;
             mediaStatus.playerState = newPlayerState;
@@ -1171,16 +1178,16 @@ export default function JWMediaManager(receiverManager, container, events, analy
     function registerPlayerStateListeners() {
         playerInstance.on('buffer', () => {
             updatePlayerState('buffer', false);
-    });
+        });
         playerInstance.on('idle', () => {
             updatePlayerState('idle', false);
-    });
+        });
         playerInstance.on('pause', () => {
             updatePlayerState('pause', false);
-    });
+        });
         playerInstance.on('play', () => {
             updatePlayerState('play', false);
-    });
+        });
         playerInstance.on('time', handleTime);
         playerInstance.on('error', handleMediaError);
         playerInstance.on('mediaError', handleMediaError);
@@ -1189,14 +1196,14 @@ export default function JWMediaManager(receiverManager, container, events, analy
         playerInstance.on('audioTracks', handleAudioTracks);
         playerInstance.on('playlistItem', (playlistItem) => {
             events.publish(Events.MEDIA_LOADED, {
-            media: mediaStatus.media,
-            playlistItem: playlistItem
+                media: mediaStatus.media,
+                playlistItem: playlistItem
+            });
         });
-    });
         playerInstance.on('seek', event => events.publish(Events.MEDIA_SEEK, event));
         playerInstance.on('seeked', () => {
             events.publish(Events.MEDIA_SEEKED, {});
-    });
+        });
         // googima doesn't fire adMeta events, thus we use the adImpression event
         // to trigger the handler.
         if (mediaStatus.media.customData
@@ -1210,20 +1217,20 @@ export default function JWMediaManager(receiverManager, container, events, analy
         }
         playerInstance.on('adPlay', event => {
             updatePlayerState('play', true);
-        events.publish(Events.AD_PLAY, event)
-    });
+            events.publish(Events.AD_PLAY, event);
+        });
         playerInstance.on('adPause', event => {
             updatePlayerState('pause', true);
-        events.publish(Events.AD_PAUSE, event)
-    });
+            events.publish(Events.AD_PAUSE, event);
+        });
         playerInstance.on('adComplete', handleAdComplete);
         playerInstance.on('adError', event => {
             console.error('AdError: %O', event);
-        events.publish(Events.AD_ERROR, event);
-        delete mediaStatus.customData.adMeta;
-        delete mediaStatus.breakStatus;
-        broadcastStatus();
-    });
+            events.publish(Events.AD_ERROR, event);
+            delete mediaStatus.customData.adMeta;
+            delete mediaStatus.breakStatus;
+            broadcastStatus();
+        });
         playerInstance.on('adTime', handleAdTime);
     }
 
@@ -1346,10 +1353,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
         mediaStatus.items.some((mediaItem, index) => {
             if (itemId == mediaItem.itemId) {
-            itemIndex = index;
-            return true;
-        }
-    });
+                itemIndex = index;
+                return true;
+            }
+        });
         return itemIndex;
     }
 
@@ -1362,11 +1369,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
         mediaStatus.media.tracks.some((track, index) => {
             if (trackId == track.trackId) {
-            trackIndex = index;
-            return true;
-        }
-        return false;
-    });
+                trackIndex = index;
+                return true;
+            }
+            return false;
+        });
         return trackIndex;
     }
 
@@ -1442,17 +1449,17 @@ export default function JWMediaManager(receiverManager, container, events, analy
         let adSchedule = media.customData.advertising.schedule;
         Object.keys(adSchedule).forEach(breakId => {
             let adBreak = adSchedule[breakId];
-        let breakPosition;
-        if (adBreak.offset == 'pre') {
-            breakPosition = 0;
-        } else if (adBreak.offset == 'post') {
-            breakPosition = media.duration;
-        } else {
-            breakPosition = adBreak.offset.indexOf(':') != -1 ?
+            let breakPosition;
+            if (adBreak.offset == 'pre') {
+                breakPosition = 0;
+            } else if (adBreak.offset == 'post') {
+                breakPosition = media.duration;
+            } else {
+                breakPosition = adBreak.offset.indexOf(':') != -1 ?
                 jwplayer.utils.seconds(adBreak.offset) : offsetTime(adBreak.offset, media.duration);
-        }
-        adBreaks.push(new AdBreakInfo(breakId, breakPosition));
-    });
+            }
+            adBreaks.push(new AdBreakInfo(breakId, breakPosition));
+        });
         return adBreaks;
     }
 
@@ -1462,7 +1469,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
     function initAdBreakInfo(media) {
         // Update information about adBreaks in the MediaInfo object.
         let breaks = parseBreaksFromMediaInfo(media);
-        breaks.length > 0 ? media.breaks = breaks : delete media.breaks;
+        if (breaks.length > 0) {
+            media.breaks = breaks;
+        } else {
+            delete media.breaks;
+        }
         // Delete breakClips until we have determined them.
         delete media.breakClips;
     }
@@ -1475,9 +1486,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // Find the highest trackId in mediaStatus.media.tracks and start numbering from that.
         mediaStatus.media.tracks.forEach(track => {
             if (track.trackId >= trackId) {
-            trackId = track.trackId++;
-        }
-    });
+                trackId = track.trackId++;
+            }
+        });
         return trackId;
     }
 
@@ -1506,10 +1517,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
             mediaStatus.media.tracks.some(track => {
                 if (track.type == TrackType.TEXT
             && track.trackContentId == activeCaptionTrack.id) {
-                activeTrackIds.push(track.trackId);
-                return true;
-            }
-        });
+                    activeTrackIds.push(track.trackId);
+                    return true;
+                }
+            });
         }
 
         // Audio Tracks
@@ -1519,10 +1530,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
             mediaStatus.media.tracks.some(track => {
                 if (track.type == TrackType.AUDIO
             && track.trackContentId == activeAudioTrack) {
-                activeTrackIds.push(track.trackId);
-                return true;
-            }
-        });
+                    activeTrackIds.push(track.trackId);
+                    return true;
+                }
+            });
         }
 
         // TODO: Video Tracks
@@ -1539,6 +1550,8 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Returns the next item in the queue.
      */
     function getNextItemInQueue() {
+        let index = -1;
+
         // TODO: can we get rid of the duplicated logic here?
         // maybe merge with handleComplete?
         // Is there a better way of exposing this?
@@ -1546,7 +1559,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
             case RepeatMode.REPEAT_OFF:
                 return mediaStatus.items.length >= 2 ? mediaStatus.items[1] : null;
             case RepeatMode.REPEAT_ALL:
-                var index = getCurrentQueueIndex();
+                index = getCurrentQueueIndex();
                 if (index != -1) {
                     return index == mediaStatus.items.length - 1
                         ? mediaStatus.items[0] : mediaStatus.items[index++];
@@ -1555,11 +1568,14 @@ export default function JWMediaManager(receiverManager, container, events, analy
             case RepeatMode.REPEAT_SINGLE:
                 return mediaStatus.items[getCurrentQueueIndex()];
             case RepeatMode.REPEAT_ALL_AND_SHUFFLE:
-                var index = getCurrentQueueIndex();
+                index = getCurrentQueueIndex();
                 if (index != -1) {
                     return index == mediaStatus.items.length - 1
                         ? null : mediaStatus.items[index++];
                 }
+                break;
+            default:
+                break;
         }
         return null;
     }
@@ -1587,5 +1603,5 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 }
             });
         }
-    }
+    };
 }

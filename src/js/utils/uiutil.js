@@ -3,12 +3,12 @@
  */
 export function getElementsByClassNames(element, classNames) {
     let elements = {};
-    if (!classNames instanceof Array) {
+    if (!(classNames instanceof Array)) {
         classNames = classNames.split(' ');
     }
     classNames.forEach(className => {
         elements[className] = element.getElementsByClassName(className)[0];
-});
+    });
     return elements;
 }
 

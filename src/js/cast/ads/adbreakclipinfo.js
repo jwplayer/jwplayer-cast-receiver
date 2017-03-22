@@ -2,7 +2,7 @@ export default class AdBreakClipInfo {
 
     constructor(id) {
         // TODO: introduce more type checking?
-        if (typeof(id) !== 'string') {
+        if (typeof (id) !== 'string') {
             throw new Error('Invalid arguments supplied.');
         }
         this.id = id;

@@ -1,0 +1,7 @@
+{
+    "siteName": "Site Name",
+    "key": "JW Player Key (Required)",
+    "theme": "dark",
+    "logoUrl": "Path to Logo",
+    "recommendationsPlaylist": "Feed ID for Recommendations"
+}
