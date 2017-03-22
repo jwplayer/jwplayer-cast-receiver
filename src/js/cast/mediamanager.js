@@ -988,12 +988,15 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 analytics: analyticsConfig,
             };
 
-            let customMediaData = media.customData;
-            if (customMediaData && customMediaData.advertising
-            && customMediaData.advertising.client) {
+            let customMediaData = media.customData || {};
+
+            if (customMediaData.advertising && customMediaData.advertising.client) {
                 playerConfig.advertising = {
                     client: customMediaData.advertising.client
                 };
+            }
+            if (customMediaData.drm) {
+                playerConfig.drm = customMediaData.drm;
             }
 
             // TODO: set textTrackStyle.
@@ -1390,11 +1393,15 @@ export default function JWMediaManager(receiverManager, container, events, analy
         };
         if (media.customData) {
             let customData = media.customData;
+
             if (customData.mediaid) {
                 playlistItem.mediaid = customData.mediaid;
             }
             if (customData.advertising && customData.advertising.schedule) {
                 playlistItem.adschedule = customData.advertising.schedule;
+            }
+            if (customData.drm) {
+                playlistItem.drm = customData.drm;
             }
         }
         if (media.tracks) {
