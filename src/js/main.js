@@ -19,13 +19,13 @@ let loadedConfig;
 
 // Retrieve the config by API key.
 let appName = getParam('appName');
-let jwKey = getParam('jwKey');
+let jwKey = getParam('key');
 
 if (appName) {
     ConfigLoader.getConfig(appName)
         .then((config) => {
             // Set the player key.
-            jwplayer.key = config.key;
+            jwplayer.key = config.key || jwKey;
             loadedConfig = config;
             // Check whether we can init the application.
             maybeInit();
