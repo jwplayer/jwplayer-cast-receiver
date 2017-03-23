@@ -18,23 +18,34 @@ let app;
 let loadedConfig;
 
 // Retrieve the config by API key.
-let appName = getAppName();
-if (!appName) {
+let appName = getParam('appName');
+let jwKey = getParam('key');
+
+if (appName) {
+    ConfigLoader.getConfig(appName)
+        .then((config) => {
+            // Set the player key.
+            jwplayer.key = config.key || jwKey;
+            loadedConfig = config;
+            // Check whether we can init the application.
+            maybeInit();
+        }, error => {
+            console.error(error);
+            exitApp();
+        });
+} else if (jwKey) {
+    jwplayer.key = jwKey;
+    loadedConfig = {
+        siteName: 'JW Player',
+        theme: 'dark',
+        logoUrl: '/assets/jw-logo-white.svg',
+        key: jwKey
+    };
+    maybeInit();
+} else {
     console.error('Error: appName missing.');
     exitApp();
 }
-
-ConfigLoader.getConfig(appName)
-    .then((config) => {
-        // Set the player key.
-        jwplayer.key = config.key;
-        loadedConfig = config;
-        // Check whether we can init the application.
-        maybeInit();
-    }, error => {
-        console.error(error);
-        exitApp();
-    });
 
 // Init the application in case the config has been loaded already.
 document.addEventListener('DOMContentLoaded', maybeInit);
@@ -53,9 +64,20 @@ function maybeInit() {
 /**
  * Determines the appName.
  */
-function getAppName() {
-    let matches = window.location.search.match(/appName=([a-zA-Z0-9\-\_]{1,255})/);
-    return matches && matches.length >= 2 ? matches[1] : null;
+function getParam(name) {
+    let url = window.location.href;
+    name = name.replace(/[\[\]]/g, '\\$&');
+
+    let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+    let results = regex.exec(url);
+
+    if (!results) {
+        return null;
+    } else if (!results[2]) {
+        return '';
+    }
+
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
 
 function exitApp() {
