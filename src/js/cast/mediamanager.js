@@ -1007,14 +1007,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
             mediaStatus.currentTime = 0;
             if ((item.startTimeOverride || item.startTime) && item.streamType != 'LIVE') {
-                // TODO: Check for live.
+            // TODO: Check for live.
                 let startTime = item.startTimeOverride ? item.startTimeOverride : item.startTime;
                 mediaStatus.currentTime = startTime;
-                playerInstance.once('ready', function() {
-                    playerInstance.seek(startTime);
-                });
-
-                // The startTime can only be overridden once.
+                playerInstance.seek(startTime);
+            // The startTime can only be overridden once.
                 delete item.startTimeOverride;
             }
 
