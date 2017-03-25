@@ -28,6 +28,9 @@ export default function ProgressBar(elements) {
                 durationElement.innerText = '--:--';
                 sliderElem.style.width = '0%';
                 mediaDuration = 0;
+            } else if (duration === Infinity) {
+                elapsedElem.innerText = '';
+                durationElement.innerText = 'Live';
             } else {
                 elapsedElem.innerText = utils.timeFormat(time);
                 let durationChanged = mediaDuration != duration;
