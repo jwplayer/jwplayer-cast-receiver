@@ -37,7 +37,9 @@ export default function MediaOverlay(element, elements) {
                 mediaTitle.textContent = metadata.title ? metadata.title : '';
             }
             mediaDescription.textContent = metadata.subtitle ? metadata.subtitle : '';
-            thumbnail.src = metadata.images && metadata.images.length > 0 ? metadata.images[0].url : '';
+            if (metadata.images && metadata.images.length > 0) {
+                thumbnail.src = metadata.images[0].url;
+            }
         },
         updateAdProgress: progressBar.updateAdProgress
     };
