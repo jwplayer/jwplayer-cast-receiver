@@ -4,7 +4,8 @@
 export const PROGRESS_BAR_ELEMENTS = [
     'jw-text-elapsed',
     'jw-text-duration',
-    'jw-progress-bar'
+    'jw-progress-bar',
+    'jw-timeslider'
 ];
 
 export default function ProgressBar(elements) {
@@ -16,18 +17,26 @@ export default function ProgressBar(elements) {
     let elapsedElem = elements[PROGRESS_BAR_ELEMENTS[0]];
     let durationElement = elements[PROGRESS_BAR_ELEMENTS[1]];
     let sliderElem = elements[PROGRESS_BAR_ELEMENTS[2]];
+    let timeSliderElem = elements[PROGRESS_BAR_ELEMENTS[3]];
 
     return {
         /**
          * Updates the progress bar.
          */
         update: function(time, duration) {
-            // TODO: LIVE Stream support
             if (time == 0 && duration == 0) {
                 elapsedElem.innerText = '--:--';
                 durationElement.innerText = '--:--';
                 sliderElem.style.width = '0%';
                 mediaDuration = 0;
+            } else if (utils.streamType(duration) === 'LIVE') {
+                let durationChanged = mediaDuration != duration;
+                if (durationChanged) {
+                    mediaDuration = duration;
+                    elapsedElem.innerText = 'Live broadcast';
+                    durationElement.innerText = '';
+                    timeSliderElem.style.display = 'none';
+                }
             } else {
                 elapsedElem.innerText = utils.timeFormat(time);
                 let durationChanged = mediaDuration != duration;
