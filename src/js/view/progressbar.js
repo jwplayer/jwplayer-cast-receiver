@@ -28,9 +28,14 @@ export default function ProgressBar(elements) {
                 durationElement.innerText = '--:--';
                 sliderElem.style.width = '0%';
                 mediaDuration = 0;
-            } else if (duration === Infinity) {
-                elapsedElem.innerText = '';
-                durationElement.innerText = 'Live';
+            } else if (utils.streamType(duration) === 'LIVE') {
+                let durationChanged = mediaDuration != duration;
+                if (durationChanged) {
+                    mediaDuration = duration;
+                    elapsedElem.innerText = 'Live';
+                    durationElement.innerText = '';
+                    sliderElem.style.width = '99%';
+                }
             } else {
                 elapsedElem.innerText = utils.timeFormat(time);
                 let durationChanged = mediaDuration != duration;

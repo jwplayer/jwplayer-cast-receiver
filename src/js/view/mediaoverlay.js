@@ -24,7 +24,6 @@ export default function MediaOverlay(element, elements) {
 
     return {
         updateContentProgress: function(time, duration) {
-            console.log(duration);
             progressBar.update(time, duration);
             if (this.displayingNextUp) {
                 nextUpTimer.innerHTML = `video will play in <strong>${Math.round(duration - time)} seconds</strong>`;
