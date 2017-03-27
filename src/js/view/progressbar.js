@@ -22,7 +22,6 @@ export default function ProgressBar(elements) {
          * Updates the progress bar.
          */
         update: function(time, duration) {
-            // TODO: LIVE Stream support
             if (time == 0 && duration == 0) {
                 elapsedElem.innerText = '--:--';
                 durationElement.innerText = '--:--';
