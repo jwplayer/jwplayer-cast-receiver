@@ -4,7 +4,8 @@
 export const PROGRESS_BAR_ELEMENTS = [
     'jw-text-elapsed',
     'jw-text-duration',
-    'jw-progress-bar'
+    'jw-progress-bar',
+    'jw-timeslider'
 ];
 
 export default function ProgressBar(elements) {
@@ -16,6 +17,7 @@ export default function ProgressBar(elements) {
     let elapsedElem = elements[PROGRESS_BAR_ELEMENTS[0]];
     let durationElement = elements[PROGRESS_BAR_ELEMENTS[1]];
     let sliderElem = elements[PROGRESS_BAR_ELEMENTS[2]];
+    let timeSliderElem = elements[PROGRESS_BAR_ELEMENTS[3]];
 
     return {
         /**
@@ -31,9 +33,9 @@ export default function ProgressBar(elements) {
                 let durationChanged = mediaDuration != duration;
                 if (durationChanged) {
                     mediaDuration = duration;
-                    elapsedElem.innerText = 'Live';
+                    elapsedElem.innerText = 'Live broadcast';
                     durationElement.innerText = '';
-                    sliderElem.style.width = '100%';
+                    timeSliderElem.style.display = 'none';
                 }
             } else {
                 elapsedElem.innerText = utils.timeFormat(time);

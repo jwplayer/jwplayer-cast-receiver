@@ -58,6 +58,9 @@ export default function UIController(element, events, config, mediaManager) {
     // Current ui state.
     let uiState;
 
+    // Is Live
+    let isLive;
+
     // Current playback position.
     let currentTime;
 
@@ -93,6 +96,7 @@ export default function UIController(element, events, config, mediaManager) {
 
     // Transition Id for timeouts.
     let stateTransitionTimeoutId = -1;
+    let stateTimeout = -1;
 
     // Apply the passed in config.
     applyConfig(config);
@@ -106,6 +110,7 @@ export default function UIController(element, events, config, mediaManager) {
 
     function setState(state) {
         uiState = state;
+        console.log('setState', uiState, element.className);
         element.className = `${state} ${activeFlags.join(' ')}`;
     }
 
@@ -146,6 +151,8 @@ export default function UIController(element, events, config, mediaManager) {
      * Maps UI states to PlayerStates.
      */
     function setUIStateToPlayerState(state) {
+        clearTimeout(stateTimeout);
+
         switch (state) {
             case PlayerState.PAUSED:
                 stateIcon.className = 'jw-icon-pause';
@@ -154,12 +161,14 @@ export default function UIController(element, events, config, mediaManager) {
                 break;
             case PlayerState.BUFFERING:
                 if (currentTime > 0) {
-                    setTimeout(() => {
+                    stateTimeout = setTimeout(() => {
                         // Set the className to content-state-buffering
                         // 2 seconds after the player enters the buffer state.
                         if (playerState == PlayerState.BUFFERING && !adPlaying) {
+                            console.log('setting state to buffering');
                             setState(UIState.CONTENT_STATE_BUFFERING);
                         }
+                        stateTimeout = -1;
                     }, 2000);
                 }
                 break;
@@ -168,6 +177,7 @@ export default function UIController(element, events, config, mediaManager) {
                 setState(UIState.APP_STATE_IDLE);
                 break;
             case PlayerState.PLAYING:
+                console.log('setting state to playing');
                 stateIcon.className = 'jw-icon-play';
                 setState(UIState.CONTENT_STATE_PLAYING);
                 break;
@@ -210,8 +220,8 @@ export default function UIController(element, events, config, mediaManager) {
 
     events.subscribe(Events.MEDIA_TIME, event => {
         if (event.currentTime < currentTime) {
-        // Handle time updates that are smaller than
-        // what we we know always as user activity.
+            // Handle time updates that are smaller than
+            // what we we know always as user activity.
             userActivityHandler();
             if (mediaOverlay.displayingNextUp) {
             // Hide the next up overlay if a user seeks back.
@@ -220,11 +230,12 @@ export default function UIController(element, events, config, mediaManager) {
             }
         }
         currentTime = event.currentTime;
+        isLive = utils.streamType(event.duration) === 'LIVE';
         mediaOverlay.updateContentProgress(event.currentTime, event.duration);
 
         let shouldDisplayNextUp = checkToggleNextUp(currentTime, event.duration);
 
-    // Check whether the state should be updated to display the next up overlay.
+        // Check whether the state should be updated to display the next up overlay.
         if (!mediaOverlay.displayingNextUp && shouldDisplayNextUp) {
             let nextQueueItem = mediaManager.getNextItemInQueue();
             if (nextQueueItem) {
