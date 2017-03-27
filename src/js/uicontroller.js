@@ -210,8 +210,8 @@ export default function UIController(element, events, config, mediaManager) {
 
     events.subscribe(Events.MEDIA_TIME, event => {
         if (event.currentTime < currentTime) {
-            // Handle time updates that are smaller than
-            // what we we know always as user activity.
+        // Handle time updates that are smaller than
+        // what we we know always as user activity.
             userActivityHandler();
             if (mediaOverlay.displayingNextUp) {
             // Hide the next up overlay if a user seeks back.
@@ -224,7 +224,7 @@ export default function UIController(element, events, config, mediaManager) {
 
         let shouldDisplayNextUp = checkToggleNextUp(currentTime, event.duration);
 
-        // Check whether the state should be updated to display the next up overlay.
+    // Check whether the state should be updated to display the next up overlay.
         if (!mediaOverlay.displayingNextUp && shouldDisplayNextUp) {
             let nextQueueItem = mediaManager.getNextItemInQueue();
             if (nextQueueItem) {
