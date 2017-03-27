@@ -36,9 +36,9 @@ if (appName) {
 } else if (jwKey) {
     jwplayer.key = jwKey;
     loadedConfig = {
-        siteName: 'JW Player',
+        siteName: 'Chromecast Player',
         theme: 'dark',
-        logoUrl: '/assets/jw-logo-white.svg',
+        logoUrl: '',
         key: jwKey
     };
     maybeInit();
