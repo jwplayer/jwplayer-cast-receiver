@@ -28,12 +28,14 @@ export const USER_ACTIVITY_TIMEOUT = 5000;
  * Applies UI related config parameters.
  */
 function applyConfig(config) {
+    let hasLogo = typeof (config.logoUrl) === 'string' && config.logoUrl.length > 0;
+
     // TODO: apply more config parameters.
     if (typeof (config.theme) === 'string' && config.theme.length > 0) {
         document.body.className = `theme-${UIUtil.escapeHtml(config.theme)}`;
     }
     Array.from(document.getElementsByClassName('logo')).forEach(element => {
-        if (typeof (config.logoUrl) === 'string' && config.logoUrl.length > 0) {
+        if (hasLogo) {
             element.style.backgroundImage = `url(${config.logoUrl})`;
         } else {
             element.style.display = 'none';
