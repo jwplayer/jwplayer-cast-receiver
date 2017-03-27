@@ -1028,9 +1028,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
             // update with a media.duration of 0 when the player state is set to
             // playing.
             mediaStatus.media.duration = mediaStatus.media.duration || 0;
-            if (jwplayer.utils.streamType(mediaStatus.media.duration) === 'LIVE') {
-                mediaStatus.media.streamType = cast.receiver.media.StreamType.LIVE;
-            }
+
             // Ensure new media metadata gets pushed to
             // the senders.
             // mediaStatusFlags.push(MediaStatusFlags.META);
@@ -1171,7 +1169,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
             }
             let oldState = mediaStatus.playerState;
             mediaStatus.playerState = newPlayerState;
-            if (!adPlaying && oldState !== newPlayerState) {
+            if (!adPlaying) {
                 events.publish(Events.STATE_CHANGE, {
                     oldState: oldState,
                     newState: mediaStatus.playerState
