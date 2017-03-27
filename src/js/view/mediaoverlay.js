@@ -5,7 +5,8 @@ export const MEDIA_OVERLAY_ELEMENTS = [
     'jw-media-title',
     'jw-media-description',
     'jw-thumb-container',
-    'jw-nextup-timer'
+    'jw-nextup-timer',
+    'media-metadata'
 ];
 
 export default function MediaOverlay(element, elements) {
@@ -15,6 +16,7 @@ export default function MediaOverlay(element, elements) {
     let mediaDescription = elements[MEDIA_OVERLAY_ELEMENTS[1]];
     let thumbnail = elements[MEDIA_OVERLAY_ELEMENTS[2]];
     let nextUpTimer = elements[MEDIA_OVERLAY_ELEMENTS[3]];
+    let mediaMetadata = elements[MEDIA_OVERLAY_ELEMENTS[4]];
 
     // UI components
     let progressBar = new ProgressBar(UIUtil.getElementsByClassNames(element, PROGRESS_BAR_ELEMENTS));
@@ -41,6 +43,10 @@ export default function MediaOverlay(element, elements) {
                 thumbnail.src = metadata.images[0].url;
             } else {
                 thumbnail.style.display = 'none';
+            }
+
+            if (mediaTitle.textContent === '' && mediaDescription.textContent === '' && thumbnail.style.display === 'none') {
+                mediaMetadata.style.display = 'none';
             }
         },
         updateAdProgress: progressBar.updateAdProgress

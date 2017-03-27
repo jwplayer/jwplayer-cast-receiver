@@ -67,7 +67,9 @@ body #app {
   #player {
     display: block;
   }
-  #jw-icon-state,
+  #jw-icon-state {
+    visibility: hidden;
+  }
   .overlay .media-metadata {
     display: none;
   }
@@ -176,7 +178,7 @@ body #app {
 /* -------------------------- */
 
 span.jw-cast-ready {
-  font-size: 1.56vw; 
+  font-size: 1.56vw;
   font-weight: 200;
   position: relative;
   display: none;
@@ -204,7 +206,7 @@ span.jw-cast-ready {
 
 .jw-icon-buffer {
   display: none;
-  font-family: 'jw-icons';  
+  font-family: 'jw-icons';
   margin: 0 auto;
   position: relative;
   top: 40%;
