@@ -32,12 +32,13 @@ function applyConfig(config) {
     if (typeof (config.theme) === 'string' && config.theme.length > 0) {
         document.body.className = `theme-${UIUtil.escapeHtml(config.theme)}`;
     }
-    if (typeof (config.logoUrl) === 'string' && config.logoUrl.length > 0) {
-        Array.from(document.getElementsByClassName('logo'))
-            .forEach(element => {
-                element.style.backgroundImage = `url(${config.logoUrl})`;
-            });
-    }
+    Array.from(document.getElementsByClassName('logo')).forEach(element => {
+        if (typeof (config.logoUrl) === 'string' && config.logoUrl.length > 0) {
+            element.style.backgroundImage = `url(${config.logoUrl})`;
+        } else {
+            element.style.display = 'none';
+        }
+    });
     if (typeof (config.siteName) === 'string' && config.siteName.length > 0) {
         document.title = config.siteName;
     }

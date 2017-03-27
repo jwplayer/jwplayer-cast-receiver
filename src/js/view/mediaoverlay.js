@@ -39,6 +39,8 @@ export default function MediaOverlay(element, elements) {
             mediaDescription.textContent = metadata.subtitle ? metadata.subtitle : '';
             if (metadata.images && metadata.images.length > 0) {
                 thumbnail.src = metadata.images[0].url;
+            } else {
+                thumbnail.style.display = 'none';
             }
         },
         updateAdProgress: progressBar.updateAdProgress
