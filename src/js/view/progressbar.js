@@ -34,7 +34,7 @@ export default function ProgressBar(elements) {
                     mediaDuration = duration;
                     elapsedElem.innerText = 'Live';
                     durationElement.innerText = '';
-                    sliderElem.style.width = '99%';
+                    sliderElem.style.width = '100%';
                 }
             } else {
                 elapsedElem.innerText = utils.timeFormat(time);
