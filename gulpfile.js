@@ -15,7 +15,7 @@ const DEST_DEBUG = 'bin-debug/';
 const DEST_RELEASE = 'bin-release/';
 
 // The jwplayer.js version we are targeting.
-const PLAYER_VERSION = '7.8.7';
+const PLAYER_VERSION = '7.10.2';
 
 function buildTarget(target) {
     const DEST = target == 'debug' ? DEST_DEBUG : DEST_RELEASE;
@@ -47,7 +47,7 @@ function buildTarget(target) {
     // Render HTML
     gulp.src('./src/*.html')
         .pipe(mustache({
-            jwplayer: useDebugPlayer ? 'libs/jwplayer.js' : `//p.jwpcdn.com/player/v/${PLAYER_VERSION}/jwplayer.js`
+            jwplayer: useDebugPlayer ? 'libs/jwplayer.js' : `//ssl.p.jwpcdn.com/player/v/${PLAYER_VERSION}/jwplayer.js`
         }))
         .pipe(gulp.dest(DEST));
 
