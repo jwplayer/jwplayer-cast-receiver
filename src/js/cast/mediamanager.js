@@ -303,7 +303,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
     function onSeek(event) {
         if (playerInstance &&
             event.data.mediaSessionId == mediaStatus.mediaSessionId) {
-            if (event.data.currentTime) {
+            if (event.data.currentTime >= 0) {
                 playerInstance.once('seeked', () => {
                     // Ensure that we broadcast a status update with the requestId
                     // for the SEEK event, so that senders can properly corellate
