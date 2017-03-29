@@ -1062,10 +1062,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 // Listen for the 'meta' event in order the duration
                 // before playback begins.
                 playerInstance.once('meta', event => {
-                    if (event.duration) {
-                        mediaStatus.media.duration = event.duration;
-                        resolve();
+                    if (!event.duration) {
+                        return;
                     }
+                    mediaStatus.media.duration = event.duration;
+                    resolve();
                 });
             }
         });
