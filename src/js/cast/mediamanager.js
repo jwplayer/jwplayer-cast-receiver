@@ -966,7 +966,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
      */
     function loadItem(item) {
         return new Promise((resolve, reject) => {
-                // Broadcast a MEDIA_LOAD event.
+            // Broadcast a MEDIA_LOAD event.
             events.publish(Events.MEDIA_LOAD, {
                 item: item
             });
@@ -1045,7 +1045,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
             playerInstance.once('setupError', reject);
             playerInstance.once('error', reject);
             if (mediaStatus.media.duration) {
-            // Update ad break info before resolving.
+                // Update ad break info before resolving.
                 initAdBreakInfo(media);
             }
 
@@ -1055,13 +1055,13 @@ export default function JWMediaManager(receiverManager, container, events, analy
             });
 
             if (hasPreRoll && !mediaStatus.media.duration) {
-            // It is impossible to determine the duration
-            // before playback.
+                // It is impossible to determine the duration
+                // before playback.
                 resolve();
             } else {
-            // Listen for the 'bufferChange' event in order the duration
-            // before playback begins.
-                playerInstance.once('bufferChange', event => {
+                // Listen for the 'meta' event in order the duration
+                // before playback begins.
+                playerInstance.once('meta', event => {
                     mediaStatus.media.duration = event.duration;
                     resolve();
                 });
