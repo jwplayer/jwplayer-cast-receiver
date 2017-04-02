@@ -1062,7 +1062,6 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 // Listen for the 'meta' event in order the duration
                 // before playback begins.
                 const onDuration = event => {
-                    console.log('onDuration');
                     if (event.duration >= 0) {
                         playerInstance.off('meta time', onDuration);
                         mediaStatus.media.duration = event.duration;
@@ -1089,10 +1088,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
                         // Pop the current item of the queue.
                         mediaStatus.items.shift();
                         // If there is a next item in the queue, play it.
+                        mediaStatus.idleReason = IdleReason.FINISHED;
                         if (mediaStatus.items.length != 0) {
                             loadItem(mediaStatus.items[0]).catch(handleSetupError);
-                        } else {
-                            mediaStatus.idleReason = IdleReason.FINISHED;
                         }
                         // Make sure to push the updated queue to connected
                         // senders.
