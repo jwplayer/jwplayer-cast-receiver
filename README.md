@@ -21,8 +21,8 @@ If this fails, the script will build against a player on the CDN, the version of
 
 ## Using the receiver
 
-You need to [register](https://cast.google.com/u/0/publish/#/overview) the receiver with Google.
-This requires you to sign up for the Cast SDK Developer console.
+You need to [register](https://developers.google.com/cast/docs/registration) the receiver with Google to receive an app ID for your receiver.
+This requires you to sign up for the Cast SDK Developer console. 
 
 The receiver will use the `appName` from the search portion of the receiver URL in order to load the config file.
 So when for example your appName is `cast-test` you need to register the following receiver URL with Google: `https://path-to-receiver?appName=cast-test`.
