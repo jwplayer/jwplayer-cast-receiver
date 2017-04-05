@@ -68,6 +68,7 @@ The following flags can be used to modify state behavior:
 - `flag-user-inactive`: Flag set 5 seconds after the user controlled media for the last time.
 - `flag-recoverable-error`: Flag set when an error is recoverable.
 
-### Known Issues
+### Unsupported Features
+- Only VAST 3.0 and Google IMA Pre-roll ads are supported
 - Ad skipping and ad click-thru not supported (limitation in Google Receiver API)
 - WEBM VP9 not supported (limitation in Google Receiver API)
