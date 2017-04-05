@@ -67,3 +67,7 @@ The following flags can be used to modify state behavior:
 - `flag-seek`: The user is seeking in media.
 - `flag-user-inactive`: Flag set 5 seconds after the user controlled media for the last time.
 - `flag-recoverable-error`: Flag set when an error is recoverable.
+
+### Known Issues
+- Ad Skipping and Ad Click-thru not supported (limitation in Google Receiver API)
+- WEBM VP9 not supported (limitation in Google Receiver API)
