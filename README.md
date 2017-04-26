@@ -1,6 +1,6 @@
 # JW Player Custom Chromecast Receiver
 
-## Building the receiver
+## Building the Receiver
 
 ```bash
 # Install dependencies
@@ -15,17 +15,6 @@ gulp serve
 # Rebuilding the receiver on changes and serving the receiver
 gulp serve watch
 ```
-
-For debug builds, the build script will try to copy jwplayer.js (and assets) from `../../jwplayer-commercial/bin-debug/`.
-If this fails, the script will build against a player on the CDN, the version of the player it builds against is defined in the build script.
-
-## Using the receiver
-
-You need to [register](https://developers.google.com/cast/docs/registration) the receiver with Google to receive an app ID for your receiver.
-This requires you to sign up for the Cast SDK Developer console. 
-
-The receiver will use the `appName` from the search portion of the receiver URL in order to load the config file.
-So when for example your appName is `cast-test` you need to register the following receiver URL with Google: `https://path-to-receiver?appName=cast-test`.
 
 ## Available gulp tasks
 
@@ -43,12 +32,78 @@ build:release # builds a release version of the receiver.
 dev           # meta-task that invokes both serve and watch.
 ```
 
-## Using debug builds
+For debug builds, the build script will try to copy jwplayer.js (and assets) from `../../jwplayer-commercial/bin-debug/`.
+If this fails, the script will build against a player on the CDN, the version of the player it builds against is defined in the build script.
 
-Debug builds will not load configuration files from `https://<appName>.jwpapp.com/config.json`, but from the `config` folder in the repository.
-For example: after you execute `gulp build serve` the receiver will be hosted at `http://localhost:8080`, but if you load that URL it does not know which config file it should load, hence the receiver won't work. In order to load the config from `/config/sample/config.json` you need to set the `appName` parameter to `sample` like this: `http://localhost:8080?appName=sample`. The JW Player Key must be included in the config.
+## Setting Up the Receiver
 
-## Receiver States
+### Receiver Application URL
+
+There are two options to build the Receiver Application URL.
+
+#### Using a JW Player Key
+
+1. Build and serve the receiver on a secure server that supports **HTTPS** (i.e. `https://domain.com/receiver`)
+2. [URI Encode](http://meyerweb.com/eric/tools/dencoder/) your JW Player Key (i.e. `A1jqZjIUo28r0w==` becomes `A1jqZjIUo28r0w%3D%3D`)
+3. The URL is then `https://domain.com/receiver?key=A1jqZjIUo28r0w%3D%3D`
+4. To verify it is setup correct, load the URL in the browser, which will display a page with a spinner in the middle
+
+**Note:** You will not be able to customize the appearance of the receiver with this method
+
+#### Using a Configuration File
+
+1. Build and serve the receiver on a secure server that supports **HTTPS** (i.e. `https://domain.com/receiver`)
+2. In the `config` folder, rename the `sample` directory to the application name you would like to use
+3. Update `config/{directoryName}/config.json` in the directory with the desired config values
+3. The URL is then `https://domain.com/receiver?appName={directoryName}`
+4. To verify it is setup correct, load the URL in the browser, which will display a page with a spinner in the middle
+
+### Receiver Application ID
+
+1. Sign in to the [Google Cast SDK Developer Console](https://cast.google.com/u/0/publish/#/signup)
+2. [Register](https://developers.google.com/cast/docs/registration) your Custom Receiver URL to obtain an application ID 
+
+### Setting up JW Player
+
+#### Web Application
+
+To support custom receivers, you will need to provide the Application ID in the configuration of your player
+
+```
+{ file: "bbbunny.mp5",
+  cast: {
+    customAppId: "Your Application ID"
+  }
+}
+```  
+#### Mobile Applications
+
+In the `senders` directory, there are sample native apps (Android and iOS) that support the custom receiver.
+
+### Release
+
+To test your receiver, you need to register the serial number of any Chromecast test devices. Once it is ready to be published,
+go into the console and go through the publishing process.
+
+For testing purposes, you will need to register the receiver at the [Google Cast SDK Developer Console
+](https://cast.google.com/u/0/publish/#/signup) to obtain an Application ID. 
+The receiver will use the `appName` from the search portion of the receiver URL in order to load the config file.
+So when for example your appName is `cast-test` you need to register the following receiver URL with Google: `https://path-to-receiver?appName=cast-test`.
+
+## Customization of the Receiver
+
+### Basic
+
+In you are using a configuration file to create an Application ID, you are currently able set some basic customizations to the receiver in addition to the JW Player Key (see `config/sample/config.json` as an example):
+- `title`: The title of the HTML page
+- `logoUrl`: The path to a logo that will be displayed when idle or loading
+- `theme`: Two themes are currently available, `light` and `dark`
+
+You can use multiple config directories and then have multiple receiver URLs. This allows you support different styled receivers using only one instance on your server.
+
+### Advanced
+
+If your are not using the configuration file or would like to perform more customizations, here are some classes that are available to be styles:
 
 - `app-state-loading`: The application is loading.
 - `app-state-idle`: The application has been loaded and content can be Cast.
@@ -60,15 +115,15 @@ For example: after you execute `gulp build serve` the receiver will be hosted at
 - `app-state-error`: An error occured playing media, the application will try to recover by playing the next item in the queue or transition into `app-state-idle`. If the error is not recoverable, the app will exit.
 - `ad-playback`: Ads are being played.
 
-### State flags
-
 The following flags can be used to modify state behavior:
 
 - `flag-seek`: The user is seeking in media.
 - `flag-user-inactive`: Flag set 5 seconds after the user controlled media for the last time.
 - `flag-recoverable-error`: Flag set when an error is recoverable.
 
-### Unsupported Features
-- Only VAST 3.0 and Google IMA Pre-roll ads are supported
-- Ad skipping and ad click-thru not supported (limitation in Google Receiver API)
-- WEBM VP9 not supported (limitation in Google Receiver API)
+### Features
+
+- DRM are supported(Widevine/PlayReady)
+- VAST 3.0 and Google IMA Pre-roll ads are supported only in Android/iOS sender apps
+- Ad skipping and ad click-through are not supported
+- DASH/WEBM VP9 streams are not supported
