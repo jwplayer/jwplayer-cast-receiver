@@ -5,20 +5,18 @@
   "repository": "git@github.com:jwplayer/jwplayer-cast-receiver.git",
   "version": "1.0.0",
   "license": "CC-BY-NC-SA-3.0",
-  "dependencies": {
-    "del": "^2.2.2",
-    "gulp": "^3.9.1",
-    "gulp-connect": "^5.0.0",
-    "gulp-less": "^3.3.0",
-    "gulp-mustache": "^2.3.0",
-    "rollup": "^0.36.4",
-    "rollup-plugin-uglify": "^1.0.1",
-    "uglify-js": "github:mishoo/UglifyJS2#harmony"
-  },
   "devDependencies": {
+    "del": "2.2.2",
     "eslint": "3.12.0",
     "eslint-config-jwplayer-base": "7.1.0",
-    "eslint-plugin-import": "1.16.0"
+    "eslint-plugin-import": "1.16.0",
+    "gulp": "3.9.1",
+    "gulp-connect": "5.0.0",
+    "gulp-less": "3.3.0",
+    "gulp-mustache": "2.3.0",
+    "rollup": "0.36.4",
+    "rollup-plugin-uglify": "1.0.1",
+    "uglify-js-harmony": "2.7.7"
   },
   "engines": {
     "node": ">=4.3.1"
