@@ -3,16 +3,24 @@ import Http from '../utils/http';
 export default class ConfigLoader {
 
     static getConfig(appName) {
+        const localConfig = `./${appName}/config.json`;
+        const remoteConfig = `https://${appName}.jwpapp.com/config.json`;
+
         return new Promise((resolve, reject) => {
-            let configUrl = DEBUG ? `./${appName}/config.json` : `https://${appName}.jwpapp.com/config.json`;
-            Http.get(configUrl).then((config) => {
-                if (this.validateConfig(config)) {
-                    resolve(config);
-                } else {
-                    reject('Invalid configuration');
-                }
-            }, reject);
+            ConfigLoader.requestConfig(localConfig, resolve, function() {
+                ConfigLoader.requestConfig(remoteConfig, resolve, reject);
+            });
         });
+    }
+
+    static requestConfig(configUrl, resolve, reject) {
+        Http.get(configUrl).then((config) => {
+            if (this.validateConfig(config)) {
+                resolve(config);
+            } else {
+                reject('Invalid configuration', configUrl);
+            }
+        }, reject);
     }
 
     static validateConfig(config) {
