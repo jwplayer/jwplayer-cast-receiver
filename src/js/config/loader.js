@@ -18,9 +18,11 @@ export default class ConfigLoader {
             if (this.validateConfig(config)) {
                 resolve(config);
             } else {
-                reject('Invalid configuration', configUrl);
+                reject('Invalid configuration: ' + configUrl);
             }
-        }, reject);
+        }).catch(function() {
+            reject('Invalid configuration: ' + configUrl);
+        });
     }
 
     static validateConfig(config) {
