@@ -70,7 +70,7 @@ There are two options to build the Receiver Application URL.
 To support custom receivers, you will need to provide the Application ID in the configuration of your player
 
 ```
-{ file: "bbbuunny.mp5",
+{ file: "bbbuunny.mp4",
   cast: {
     customAppId: "Your Application ID"
   }
