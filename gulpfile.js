@@ -15,7 +15,7 @@ const DEST_DEBUG = 'bin-debug/';
 const DEST_RELEASE = 'bin-release/';
 
 // The jwplayer.js version we are targeting.
-const PLAYER_VERSION = '7.10.3';
+const PLAYER_VERSION = '8.1.3';
 
 function buildTarget(target) {
     const DEST = target == 'debug' ? DEST_DEBUG : DEST_RELEASE;
