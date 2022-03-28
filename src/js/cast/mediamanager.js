@@ -158,7 +158,7 @@ export default class JWMediaManager {
             case EventType.REQUEST_QUEUE_LOAD:
                 this.onQueueLoad(event);
                 return;
-            case EventType.GET_STATUS:
+            case EventType.MEDIA_STATUS:
                 this.onGetStatus(event);
                 return;
             default:
