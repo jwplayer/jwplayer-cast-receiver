@@ -180,7 +180,7 @@ export default function UIController(element, events, config, mediaManager) {
     }
 
     function loadCurrentItemMetadata() {
-        mediaOverlay.updateMediaMeta(currentItem.media.metadata, false);
+        mediaOverlay.updateMediaMeta(currentItem.metadata, false);
     }
 
   /*

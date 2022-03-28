@@ -6,10 +6,9 @@ import ConfigLoader from './config/loader';
 // Global debug setting.
 window.DEBUG = jwplayer.version.search(/[0-9]+\.[0-9]+\.[0-9].*\+local\./) != -1;
 
-// Enable debug logging for local jwplayer.js versions.
-if (DEBUG) {
-    cast.receiver.logger.setLevelValue(cast.receiver.LoggerLevel.DEBUG);
-}
+// comment this in if you want to remote debug with Chrome https://developers.google.com/cast/docs/debugging/remote_debugger
+// const context = cast.framework.CastReceiverContext.getInstance();
+// context.setLoggerLevel(cast.framework.LoggerLevel.DEBUG);
 
 // The instance of the receiver app.
 let app;
@@ -81,5 +80,5 @@ function getParam(name) {
 }
 
 function exitApp() {
-    cast.receiver.CastReceiverManager.getInstance().stop();
+    cast.framework.CastReceiverContext.getInstance().stop();
 }
