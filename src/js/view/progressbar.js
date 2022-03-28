@@ -29,7 +29,7 @@ export default function ProgressBar(elements) {
                 durationElement.innerText = '--:--';
                 sliderElem.style.width = '0%';
                 mediaDuration = 0;
-            } else if (utils.streamType(duration) === 'LIVE') {
+            } else if (utils.streamType === 'LIVE') {
                 let durationChanged = mediaDuration != duration;
                 if (durationChanged) {
                     mediaDuration = duration;

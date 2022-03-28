@@ -24,6 +24,8 @@ We're using gulp as build system, currently the following tasks are available:
 $ gulp --tasks-simple
 serve         # starts a http server that serves the receiver.
 clean         # cleans the build directories.
+clean-debug   # cleans the build-debug directory.
+clean-release # cleans the build-release directory.
 watch         # watches the src directories for changes.
 default       # invokes build.
 build         # builds a debug and a release version of the receiver.
@@ -43,25 +45,26 @@ There are two options to build the Receiver Application URL.
 
 #### Using a JW Player Key
 
-1. Build and serve the receiver on a secure server that supports **HTTPS** (i.e. `https://domain.com/receiver`)
+1. Build and serve the receiver on a secure server that supports **HTTPS** (i.e. `https://domain.com/`)
 2. [URI Encode](http://meyerweb.com/eric/tools/dencoder/) your JW Player Key (i.e. `A1jqZjIUo28r0w==` becomes `A1jqZjIUo28r0w%3D%3D`)
-3. The URL is then `https://domain.com/receiver?key=A1jqZjIUo28r0w%3D%3D`
+3. The URL is then `https://domain.com/?key=A1jqZjIUo28r0w%3D%3D`
 4. To verify it is setup correct, load the URL in the browser, which will display a page with a spinner in the middle
 
 **Note:** You will not be able to customize the appearance of the receiver with this method
 
 #### Using a Configuration File
 
-1. Build and serve the receiver on a secure server that supports **HTTPS** (i.e. `https://domain.com/receiver`)
+1. Build and serve the receiver on a secure server that supports **HTTPS** (i.e. `https://domain.com/`)
 2. In the `config` folder, rename the `sample` directory to the application name you would like to use
 3. Update `config/{directoryName}/config.json` in the directory with the desired config values
-3. The URL is then `https://domain.com/receiver?appName={directoryName}`
+3. The URL is then `https://domain.com/?appName={directoryName}`
 4. To verify it is setup correct, load the URL in the browser, which will display a page with a spinner in the middle
 
 ### Receiver Application ID
 
 1. Sign in to the [Google Cast SDK Developer Console](https://cast.google.com/u/0/publish/#/signup)
 2. [Register](https://developers.google.com/cast/docs/registration) your Custom Receiver URL to obtain an application ID 
+3. You must also [register] (https://developers.google.com/cast/docs/debugging/remote_debugger) your Chromecast device if you want to debug 
 
 ### Setting up JW Player
 

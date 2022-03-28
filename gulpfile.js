@@ -5,7 +5,6 @@ let connect = require('gulp-connect');
 let mustache = require('gulp-mustache');
 let less = require('gulp-less');
 let rollup = require('rollup');
-let minifier = require('uglify-js-harmony').minify;
 let uglify = require('rollup-plugin-uglify');
 let del = require('del');
 let child_process = require('child_process');
@@ -15,7 +14,7 @@ const DEST_DEBUG = 'bin-debug/';
 const DEST_RELEASE = 'bin-release/';
 
 // The jwplayer.js version we are targeting.
-const PLAYER_VERSION = '8.1.3';
+const PLAYER_VERSION = '8.24.4';
 
 function buildTarget(target) {
     const DEST = target == 'debug' ? DEST_DEBUG : DEST_RELEASE;
@@ -61,55 +60,71 @@ function buildTarget(target) {
     // Minify release builds
     let plugins = [];
     if (target == 'release') {
-        plugins.push(uglify({}, minifier));
+        plugins.push(uglify.uglify());
     }
 
     // Rollup JS
     return rollup.rollup({
-            entry: 'src/js/main.js',
+            input: './src/js/main.js',
             plugins: plugins,
+        }).then((bundle) => {
+            return bundle.write({
+            //sourceMap: target != 'release',
+            file: `./${DEST}/app.js`,
+            name: 'JWCast',
+            format: 'iife',
             globals: {
                 jwplayer: 'jwplayer',
                 cast: 'cast',
                 google: 'google'
             }
-        }).then((bundle) => {
-            bundle.write({
-            //sourceMap: target != 'release',
-            dest: DEST + 'app.js',
-            format: 'iife',
-            moduleName: 'JWCast'
         });
-});
+    });
 }
 
 // Serves bin-debug/ and config/ at localhost:8080.
-gulp.task('serve', () => {
+gulp.task('serve', (cb) => {
     connect.server({
-    root: ['bin-debug', 'config'],
-    port: 8080
-});
+        root: ['bin-debug', 'config'],
+        port: 8080,
+        livereload: true,
+        name: 'Custom Receiver' 
+    });
+
+    cb();
 });
 
 // Cleanup task, deletes bin-debug and bin-release.
-gulp.task('clean', () => { return del(['bin-debug/', 'bin-release/']) });
+gulp.task('clean', () => { 
+    return del(['bin-debug', 'bin-release']);
+});
+
+// Delete bin-debug
+gulp.task('clean-debug', () => { 
+    return del(['bin-debug']);
+});
+
+// Delete bin-release
+gulp.task('clean-release', () => { 
+    return del(['bin-release']);
+});
+
+// Builds a debug package.
+gulp.task('build:debug', gulp.series('clean-debug', () => { return buildTarget('debug') }));
+
+// Builds a release package.
+gulp.task('build:release', gulp.series('clean-release', () => { return buildTarget('release') }));
+
+// Builds a debug and a release package.
+gulp.task('build', gulp.series('build:debug', 'build:release'));
 
 // Watch task: will recompile when changes have been detected.
-gulp.task('watch', ['clean', 'build'], () => {
-    gulp.watch(['src/**/*.js', 'src/*.html', 'src/style/**/*.less'], ['build']);
+gulp.task('watch', () => {
+    return gulp.watch(['src/**/*.js', 'src/*.html', 'src/style/**/*.less'], gulp.series('build'));
 });
 
 // Task invoked when gulp is being executed without parameters.
-gulp.task('default', ['build']);
-
-// Builds a debug and a release package.
-gulp.task('build', ['clean', 'build:debug', 'build:release']);
-
-// Builds a debug package.
-gulp.task('build:debug', ['clean'], () => { return buildTarget('debug') });
-
-// Builds a release package.
-gulp.task('build:release', ['clean'], () => { return buildTarget('release') });
+gulp.task('default', gulp.series('build'));
 
 // Development task: serves bin-debug and watches for changes.
-gulp.task('dev', ['watch', 'serve']);
+gulp.task('dev', gulp.series('serve', 'watch'));

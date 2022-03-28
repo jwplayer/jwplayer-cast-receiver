@@ -3,7 +3,7 @@ import * as Events from '../events';
 import { PlayerState } from './playerstate';
 import { RepeatMode } from './repeatmode';
 import { Command } from './command';
-import { EventType, MessageType, ErrorReason, SeekResumeState, IdleReason } from './messages';
+import { EventType, ErrorType, MessageType, ErrorReason, SeekResumeState, IdleReason } from './messages';
 import { TrackType, TextTrackType } from './tracktype';
 import AdBreakInfo from './ads/adbreakinfo';
 import AdBreakClipInfo from './ads/adbreakclipinfo';
@@ -56,49 +56,50 @@ export const ERROR_TIMEOUT = 5000;
  * @param {cast.receiver.ReceiverManager} receiverManager The ReceiverManager singleton.
  * @param {HTMLElement} container the container jwplayer.js can be attached to.
  */
-export default function JWMediaManager(receiverManager, container, events, analyticsConfig) {
+export default class JWMediaManager {
+    constructor(receiverManager, container, events, analyticsConfig) {
+        this.receiverManager = receiverManager;
+        this.playerManager = this.receiverManager.getPlayerManager();
+        this.container = container;
+        this.events = events;
+        this.analyticsConfig = analyticsConfig;
+        // The current JW Player instance.
+        // TODO: make this an object, which allows for multiple playerInstances per mediaSessionId
+        // so we can do preloading.
+        this.playerInstance;
+        // Represents the status of a media session.
+        this.mediaStatus;
+        /**
+         * By default we do not serialize the entire media status.
+         * The following elements should be set in this block if theycast.receiver.media.MediaStatus
+         * should be serialized.
+         *
+         * This object is used to set the flags for which elements in the media
+         * status should be serialized.
+         */
+            // let mediaStatusFlags = [];
 
-    // The current JW Player instance.
-    // TODO: make this an object, which allows for multiple playerInstances per mediaSessionId
-    // so we can do preloading.
-    let playerInstance;
+        // The requestId that will be associated with the next status update.
+        // So that senders can correlate their actions with a status update.
+        this.currentRequestId = 0;
+        // Whether we are currently processing a load request.
+        this.isLoading = false;
+        // The last time an ad pod was initiated.
+        this.adPodStartTime = 0;
 
-    // Represents the status of a media session.
-    let mediaStatus;
-
-    /**
-     * By default we do not serialize the entire media status.
-     * The following elements should be set in this block if they
-     * should be serialized.
-     *
-     * This object is used to set the flags for which elements in the media
-     * status should be serialized.
-     */
-        // let mediaStatusFlags = [];
-
-        // The messageBus used for sending/receiving messages.
-    let messageBus = receiverManager.getCastMessageBus(cast.receiver.media.MEDIA_NAMESPACE);
-
-    // The requestId that will be associated with the next status update.
-    // So that senders can correlate their actions with a status update.
-    let currentRequestId = 0;
-
-    // Whether we are currently processing a load request.
-    let isLoading = false;
-
-    // The last time an ad pod was initiated.
-    let adPodStartTime = 0;
-
-    // Start listening for messages.
-    messageBus.addEventListener('message', dispatchEvent);
+        // Start listening for messages.
+        // https://developers.google.com/cast/docs/web_receiver/core_features following CAF changes
+        this.playerManager.addEventListener(EventType.ALL, this.dispatchEvent.bind(this));
+    }
 
     /**
      * Broadcasts a message to every connected sender.
      * @param  {Object} message The message to send to senders.
      */
-    function broadcastMessage(message) {
+    broadcastMessage(message) {
         try {
-            messageBus.broadcast(JSON.stringify(message));
+            // second argument is for senderId. If no senderId, cast receiver context sends message to ALL senders.
+            this.receiverManager.sendCustomMessage('urn:x-cast:jw.custom.receiver', '', JSON.stringify(message));
         } catch (err) {
             console.warn('Unable to broadcast message: %O', err);
         }
@@ -109,9 +110,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * @param  {string} senderId The identifier of the sender to send a message to.
      * @param  {Object} message  The message to send.
      */
-    function sendMessage(senderId, message) {
+    sendMessage(senderId, message) {
         try {
-            messageBus.send(senderId, JSON.stringify(message));
+            this.receiverManager.sendCustomMessage('urn:x-cast:jw.custom.receiver', senderId, JSON.stringify(message));
         } catch (err) {
             console.warn('Unable to send message: %O', err);
         }
@@ -123,30 +124,20 @@ export default function JWMediaManager(receiverManager, container, events, analy
      *
      * @param  {Object} message The message to dispatch.
      */
-    function dispatchEvent(message) {
+    dispatchEvent(message) {
         // Check if the message contains data.
-        if (!message.data) {
+        if (!message) {
             return;
         }
-
-        let data;
-        try {
-            data = JSON.parse(message.data);
-        } catch (err) {
-            console.warn('Unable to parse event: %O', message);
-            return;
-        }
-
-        if (!data.type) {
+        if (!message.type) {
             // err: invalid request.
-            sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
+            this.sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
             return;
         }
-
         let event = {
-            senderId: message.senderId,
-            data: data,
-            type: data.type
+            senderId: message.senderId ? message.senderId : null,
+            data: message.requestData ? message.requestData : message,
+            type: message.type ? message.type : null,
         };
 
         // Broadcast that user activity has occured so that the UI
@@ -154,84 +145,77 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // TODO: we might want to limit USER_ACTIVITY to a subset of
         // events.
         if (event.type != EventType.GET_STATUS) {
-            events.publish(Events.USER_ACTIVITY, {
+            this.events.publish(Events.USER_ACTIVITY, {
                 reason: event.type
             });
         }
-
         // First see if we need to handle any events that create
         // mediaSessions, or don't need one to be handled.
         switch (event.type) {
-            case EventType.LOAD:
-                onLoad(event);
+            case EventType.LOADED_DATA:
+                this.onLoad(event);
                 return;
-            case EventType.QUEUE_LOAD:
-                onQueueLoad(event);
+            case EventType.REQUEST_QUEUE_LOAD:
+                this.onQueueLoad(event);
                 return;
             case EventType.GET_STATUS:
-                onGetStatus(event);
+                this.onGetStatus(event);
                 return;
             default:
                 break;
         }
-
         // We're handling an event that doesn't create a media session
         // first, let's do some validation before we dispatch anything.
-        if (!mediaStatus) {
-            sendErrorInvalidPlayerState(event);
-            return;
-        }
-        if (event.data.mediaSessionId != mediaStatus.mediaSessionId) {
-            // err: wrong mediaSession
-            // We don't have to do anything in this case.
+        if (!this.mediaStatus) {
+            this.sendErrorInvalidPlayerState(event);
             return;
         }
 
-        if (event.data.requestId) {
-            currentRequestId = event.data.requestId;
+        if (event.data && event.data.requestId) {
+            this.currentRequestId = event.data.requestId;
         }
 
         // Message looks good so far, proceed with dispatching it.
         switch (event.type) {
-            case EventType.STOP:
-                onStop(event);
+            case EventType.REQUEST_STOP:
+                this.onStop(event);
                 break;
-            case EventType.PAUSE:
-                onPause(event);
+            case EventType.REQUEST_PAUSE:
+                this.onPause(event);
                 break;
-            case EventType.PLAY:
-                onPlay(event);
+            case EventType.REQUEST_PLAY:
+                this.onPlay(event);
                 break;
-            case EventType.SEEK:
-                onSeek(event);
+            case EventType.REQUEST_SEEK:
+                this.onSeek(event);
                 break;
-            case EventType.SET_VOLUME:
-                onSetVolume(event);
+            case EventType.REQUEST_VOLUME_CHANGE:
+                this.onSetVolume(event);
                 break;
-            case EventType.EDIT_TRACKS_INFO:
-                onEditTracksInfo(event);
+            case EventType.REQUEST_EDIT_TRACKS_INFO:
+                this.onEditTracksInfo(event);
                 break;
-            case EventType.QUEUE_INSERT:
-                onQueueInsert(event);
+            case EventType.REQUEST_QUEUE_INSERT:
+                this.onQueueInsert(event);
                 break;
-            case EventType.QUEUE_UPDATE:
-                onQueueUpdate(event);
+            case EventType.REQUEST_QUEUE_UPDATE:
+                this.onQueueUpdate(event);
                 break;
-            case EventType.QUEUE_REMOVE:
-                onQueueRemove(event);
+            case EventType.REQUEST_QUEUE_REMOVE:
+                this.onQueueRemove(event);
                 break;
-            case EventType.QUEUE_REORDER:
-                onQueueReorder(event);
+            case EventType.REQUEST_QUEUE_REORDER:
+                this.onQueueReorder(event);
                 break;
-            case EventType.PRELOAD:
-                onPreload(event);
+            case EventType.PLAYER_PRELOADING:
+                this.onPreload(event);
                 break;
-            case EventType.CANCEL_PRELOAD:
-                onCancelPreload(event);
+            case EventType.PLAYER_PRELOADING_CANCELLED:
+                this.onCancelPreload(event);
                 break;
             default:
                 // Invalid command.
-                sendError(MessageType.INVALID_REQUEST,
+                this.sendError(ErrorType.INVALID_REQUEST,
                     ErrorReason.INVALID_COMMAND, event);
                 console.warn('Received invalid command ' + event.type);
         }
@@ -241,107 +225,106 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Event Handlers.
      */
 
-    function onLoad(event) {
+    onLoad(event) {
         // TODO: Handle load requests where the actual media
         // doesn't change, but only it's metadata, for example
         // images. Currently we don't handle these well, but we
-        if (isLoading) {
+        if (this.isLoading) {
             // Send load cancelled.
-            sendErrorLoadCancelled(event);
+            this.sendErrorLoadCancelled(event);
         }
-        createMediaSession();
-        loadItem(event.data).then(() => {
-            isLoading = false;
-            sendStatus(event.senderId, event.data.requestId);
+        this.createMediaSession();
+        this.loadItem(this.playerManager.getMediaInformation()).then(() => {
+            this.isLoading = false;
+            this.sendStatus(event.senderId, event.data ? event.data.requestId : null);
         }, (error) => {
-            currentRequestId = event.data.requestId;
-            handleSetupError(error);
+            this.currentRequestId = event.data ? event.data.requestId : null;
+            this.handleSetupError(error);
         });
-        events.publish(Events.QUEUE_LOAD, {
+        this.events.publish(Events.QUEUE_LOAD, {
             items: [event.data]
         });
     }
 
-    function onStop(event) {
-        if (playerInstance) {
-            playerInstance.stop();
-            mediaStatus.idleReason = IdleReason.CANCELLED;
-            broadcastStatus();
+    onStop(event) {
+        if (this.playerInstance) {
+            this.playerInstance.stop();
+            this.mediaStatus.idleReason = IdleReason.CANCELLED;
+            this.broadcastStatus();
         } else {
-            sendErrorInvalidPlayerState(event);
+            this.sendErrorInvalidPlayerState(event);
         }
     }
 
-    function onPause(event) {
-        if (playerInstance) {
-            playerInstance.pause(true);
-            if (mediaStatus.breakStatus) {
+    onPause(event) {
+        if (this.playerInstance) {
+            this.playerInstance.pause(true);
+            if (this.mediaStatus.breakStatus) {
                 // TODO: improve / get rid of this
                 // Force player state to playing.
-                mediaStatus.playerState = PlayerState.PAUSED;
-                broadcastStatus();
+                this.mediaStatus.playerState = PlayerState.PAUSED;
+                this.broadcastStatus();
             }
         } else {
-            sendErrorInvalidPlayerState(event);
+            this.sendErrorInvalidPlayerState(event);
         }
     }
 
-    function onPlay(event) {
-        if (playerInstance) {
-            playerInstance.play(true);
-            if (mediaStatus.breakStatus) {
+    onPlay(event) {
+        if (this.playerInstance) {
+            this.playerInstance.play(true);
+            if (this.mediaStatus.breakStatus) {
                 // TODO: improve / get rid of this
                 // Force player state to playing.
-                mediaStatus.playerState = PlayerState.PLAYING;
-                broadcastStatus();
+                this.mediaStatus.playerState = PlayerState.PLAYING;
+                this.broadcastStatus();
             }
         } else {
-            sendErrorInvalidPlayerState(event);
+            this.sendErrorInvalidPlayerState(event);
         }
     }
 
-    function onSeek(event) {
-        if (playerInstance &&
-            event.data.mediaSessionId == mediaStatus.mediaSessionId) {
+    onSeek(event) {
+        if (this.playerInstance) {
             if (event.data.currentTime >= 0) {
-                playerInstance.once('seeked', () => {
+                this.playerInstance.seek(event.data.currentTime);
+                this.playerInstance.on('seeked', () => {
                     // Ensure that we broadcast a status update with the requestId
                     // for the SEEK event, so that senders can properly corellate
                     // requests and responses.
-                    broadcastStatus(event.data.requestId);
+                    this.broadcastStatus(event.data.requestId);
                 });
-                playerInstance.seek(event.data.currentTime);
             }
             if (event.data.resumeState) {
-                playerInstance.play(event.data.resumeState == SeekResumeState.PLAYBACK_START);
+                this.playerInstance.play(event.data.resumeState == SeekResumeState.PLAYBACK_START);
             }
         } else {
-            sendErrorInvalidPlayerState(event);
+            this.sendErrorInvalidPlayerState(event);
         }
     }
 
-    function onSetVolume(event) {
+    onSetVolume(event) {
         // TODO: When does this ever get called?
         // It appears that default senders only change the System volume level.
-        if (playerInstance) {
-            mediaStatus.volume = {
+        if (this.playerInstance) {
+            this.mediaStatus.volume = {
                 level: event.data.level,
                 mute: event.data.mute
             };
-            playerInstance.setVolume(event.data.level * 100);
-            playerInstance.setMute(event.data.mute);
-            broadcastStatus();
+            this.playerInstance.setVolume(event.data.level * 100);
+            this.playerInstance.setMute(event.data.mute);
+            this.broadcastStatus();
         } else {
-            sendErrorInvalidPlayerState(event);
+            this.sendErrorInvalidPlayerState(event);
         }
     }
 
-    function onGetStatus(event) {
+    onGetStatus(event) {
         // TODO: NO_METADATA and NO_QUEUE_ITEMS flags support.
-        sendStatus(event.senderId, event.data.requestId);
+        this.sendStatus(event.senderId, event.data ? event.data.requestId : null);
     }
 
-    function onEditTracksInfo(event) {
+    onEditTracksInfo(event) {
         if (event.data.textTrackStyle) {
             // TODO: set textTrackStyle
             // let textTrackStyle = event.data.textTrackStyle;
@@ -365,22 +348,22 @@ export default function JWMediaManager(receiverManager, container, events, analy
             let disableCaptions = true;
 
             activeTrackIds.forEach(trackId => {
-                let track = getTrackById(trackId);
+                let track = this.getTrackById(trackId);
                 if (track) {
                     if (track.type == TrackType.TEXT) {
-                        let playerTracks = playerInstance.getCaptionsList();
+                        let playerTracks = this.playerInstance.getCaptionsList();
                         playerTracks.some((playerTrack, index) => {
                             if (playerTrack.id == track.trackContentId) {
                                 disableCaptions = false;
-                                if (playerInstance.getCurrentCaptions() != index) {
-                                    playerInstance.setCurrentCaptions(index);
+                                if (this.playerInstance && this.playerInstance.getCurrentCaptions() != index) {
+                                    this.playerInstance.setCurrentCaptions(index);
                                 }
                                 return true;
                             }
                         });
                     } else if (track.type == TrackType.AUDIO) {
                     // trackContentId for audio tracks match jwplayer.js's trackIndex.
-                        playerInstance.setCurrentAudioTrack(track.trackContentId);
+                        this.playerInstance.setCurrentAudioTrack(track.trackContentId);
                     } else if (track.type == TrackType.VIDEO) {
                     // TODO
                     }
@@ -392,55 +375,53 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
             // Disable caption tracks if no active tracks
             // have been supplied.
-            if (disableCaptions) {
-                playerInstance.setCurrentCaptions(TRACK_DISABLED);
+            if (disableCaptions && this.playerInstance) {
+                this.playerInstance.setCurrentCaptions(TRACK_DISABLED);
             }
         }
 
-        broadcastStatus();
+        this.broadcastStatus();
     }
 
-    function onQueueLoad(event) {
-        if (isLoading) {
+    onQueueLoad(event) {
+        if (this.isLoading) {
             // Send load cancelled.
-            sendErrorLoadCancelled(event);
+            this.sendErrorLoadCancelled(event);
         }
         // Create a new MediaSession.
-        createMediaSession();
-
+        this.createMediaSession();
         event.data.items.forEach((item, index) => {
             item.itemId = ++index;
         });
 
         // Associate it with a queue.
-        mediaStatus.items = event.data.items;
-        mediaStatus.repeatMode = event.data.repeatMode;
+        this.mediaStatus.items = event.data.items;
+        this.mediaStatus.repeatMode = event.data.repeatMode;
 
-        let mediaItem = mediaStatus.items[event.data.startIndex];
-
+        let mediaItem = this.mediaStatus.items[event.data.startIndex];
         // Load the first item.
-        loadItem(mediaItem)
+        this.loadItem(mediaItem)
             .then(() => {
-                isLoading = false;
-                sendStatus(event.senderId, event.data.requestId);
+                this.isLoading = false;
+                this.sendStatus(event.senderId, event.data.requestId);
             }, (error) => {
-                currentRequestId = event.data.requestId;
-                handleSetupError(error);
+                this.currentRequestId = event.data.requestId;
+                this.handleSetupError(error);
             });
 
-        events.publish(Events.QUEUE_LOAD, {
-            items: mediaStatus.items,
-            repeatMode: mediaStatus.repeatMode
+        this.events.publish(Events.QUEUE_LOAD, {
+            items: this.mediaStatus.items,
+            repeatMode: this.mediaStatus.repeatMode
         });
 
         // Update receivers with the new queue.
         // mediaStatusFlags.push(MediaStatusFlags.QUEUE);
     }
 
-    function onQueueInsert(event) {
+    onQueueInsert(event) {
         // Find the highest itemId in mediaStatus.items
         let id = 1;
-        mediaStatus.items.forEach((item) => {
+        this.mediaStatus.items.forEach((item) => {
             if (item.itemId >= id) {
                 id = item.itemId + 1;
             }
@@ -454,106 +435,106 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // Check whether items should be added at the end of the queue.
         if (!event.data.insertBefore) {
             // Append the new items to the queue.
-            mediaStatus.items = mediaStatus.items.concat(event.data.items);
+            this.mediaStatus.items = this.mediaStatus.items.concat(event.data.items);
         } else {
             // Figure out where we need to insert something.
-            let insertBeforeIndex = findIndexOfItem(event.data.insertBefore);
+            let insertBeforeIndex = this.findIndexOfItem(event.data.insertBefore);
             // Insert the elements at the correct index using a nifty trick
             // in order to prevent an extra array loop.
-            Array.prototype.splice.apply(mediaStatus.items, [insertBeforeIndex, 0].concat(event.data.items));
+            Array.prototype.splice.apply(this.mediaStatus.items, [insertBeforeIndex, 0].concat(event.data.items));
         }
 
         // Check if we need to load a new item.
         let nextItem;
         if (event.data.currentItemIndex !== undefined) {
-            nextItem = mediaStatus.items[event.data.currentItemIndex];
-        } else if (event.data.currentItem && event.data.currentItem != mediaStatus.currentItem) {
-            nextItem = mediaStatus.items[findIndexOfItem(event.data.currentItem)];
+            nextItem = this.mediaStatus.items[event.data.currentItemIndex];
+        } else if (event.data.currentItem && event.data.currentItem != this.mediaStatus.currentItem) {
+            nextItem = this.mediaStatus.items[this.findIndexOfItem(event.data.currentItem)];
         }
 
         if (nextItem) {
             // Yes, load a new item.
             nextItem.startTimeOverride = event.data.currentTime;
-            loadItem(nextItem).catch(handleSetupError);
+            this.loadItem(nextItem).catch(this.handleSetupError);
         } else {
             // Loading not needed.
-            broadcastStatus();
+            this.broadcastStatus();
         }
 
-        events.publish(Events.QUEUE_UPDATE, {
-            items: mediaStatus.items
+        this.events.publish(Events.QUEUE_UPDATE, {
+            items: this.mediaStatus.items
         });
     }
 
-    function onQueueUpdate(event) {
+    onQueueUpdate(event) {
         if (event.data.currentItemId) {
-            let nextItem = mediaStatus.items[findIndexOfItem(event.data.currentItemId)];
+            let nextItem = this.mediaStatus.items[this.findIndexOfItem(event.data.currentItemId)];
             nextItem.startTimeOverride = event.data.currentTime;
-            loadItem(nextItem).catch(handleSetupError);
+            this.loadItem(nextItem).catch(this.handleSetupError);
         } else if (event.data.jump) {
-            let newIndex = getCurrentQueueIndex() + event.data.jump;
+            let newIndex = this.getCurrentQueueIndex() + event.data.jump;
             // Check if newIndex needs to wrap around the queue boundaries.
-            if (newIndex >= mediaStatus.items.length) {
-                newIndex -= mediaStatus.items.length;
+            if (newIndex >= this.mediaStatus.items.length) {
+                newIndex -= this.mediaStatus.items.length;
             }
             if (newIndex < 0) {
-                newIndex += mediaStatus.items.length;
+                newIndex += this.mediaStatus.items.length;
             }
-            let nextItem = mediaStatus.items[getCurrentQueueIndex() + event.data.jump];
+            let nextItem = this.mediaStatus.items[this.getCurrentQueueIndex() + event.data.jump];
             // Override the startTime, if necessary.
             nextItem.startTimeOverride = event.data.currentTime;
-            loadItem(nextItem).catch(handleSetupError);
+            this.loadItem(nextItem).catch(this.handleSetupError);
         }
         // Check whether repeatMode requires updating.
         if (event.data.repeatMode) {
-            mediaStatus.repeatMode = event.data.repeatMode;
+            this.mediaStatus.repeatMode = event.data.repeatMode;
         }
     }
 
-    function onQueueRemove(event) {
+    onQueueRemove(event) {
         if (!event.data.itemIds || event.data.itemIds.length == 0) {
             // err: invalid args
-            sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
+            this.sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
             return;
         }
-        if (mediaStatus.items.length == 0) {
-            sendErrorInvalidPlayerState(event);
+        if (this.mediaStatus.items.length == 0) {
+            this.sendErrorInvalidPlayerState(event);
             return;
         }
         event.data.itemIds.forEach((id) => {
-            let idx = findIndexOfItem(id);
-            mediaStatus.items.splice(idx, 1);
+            let idx = this.findIndexOfItem(id);
+            this.mediaStatus.items.splice(idx, 1);
         });
-        if (event.data.currentItemId && event.data.currentItemId != mediaStatus.currentItemId) {
-            let nextItem = mediaStatus.items[findIndexOfItem(event.data.currentItemId)];
+        if (event.data.currentItemId && event.data.currentItemId != this.mediaStatus.currentItemId) {
+            let nextItem = this.mediaStatus.items[findIndexOfItem(event.data.currentItemId)];
             nextItem.startTimeOverride = event.data.currentTime;
-            loadItem(nextItem).catch(handleSetupError);
-        } else if (getCurrentQueueIndex() === -1) {
+            this.loadItem(nextItem).catch(this.handleSetupError);
+        } else if (this.getCurrentQueueIndex() === -1) {
                 // Current queue item has been removed to, stop playback.
-            if (playerInstance) {
-                playerInstance.stop();
+            if (this.playerInstance) {
+                this.playerInstance.stop();
             } /* else { // err: invalid command ? } */
         } else {
                 // Broadcast the new status, because we're not stopping or loading
                 // (which will implicitly trigger a broadcast).
-            broadcastStatus();
+            this.broadcastStatus();
         }
     }
 
-    function onQueueReorder(event) {
+    onQueueReorder(event) {
         let itemIds = event.data.itemIds;
         if (!itemIds) {
-            sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
+            this.sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
             return;
         }
 
         if (event.data.insertBefore) {
             // Find the index of the queue item we want to insert before.
-            let insertBeforeIndex = findIndexOfItem(event.data.insertBefore);
+            let insertBeforeIndex = this.findIndexOfItem(event.data.insertBefore);
 
             if (!insertBeforeIndex) {
                 // err: could not find item to insert before.
-                sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
+                this.sendErrorInvalidRequest(event, ErrorReason.INVALID_COMMAND);
                 return;
             }
 
@@ -566,9 +547,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
             // New Order: “D”,”H”,”B”,“A”,”G”,”E”
             for (let i = insertBeforeIndex; itemIds.length > 0; i++) {
                 // Get the mediaItem to reorder from the queue.
-                let itemToMove = mediaStatus.items.splice(findIndexOfItem(itemIds.shift()), 1)[0]; // TODO: check for index not being out of bounds
+                let itemToMove = this.mediaStatus.items.splice(this.findIndexOfItem(itemIds.shift()), 1)[0]; // TODO: check for index not being out of bounds
                 // Insert the item at the new index.
-                mediaStatus.items.splice(i - 1, 0, itemToMove);
+                this.mediaStatus.items.splice(i - 1, 0, itemToMove);
             }
         } else {
             // insertBefore is not specificied, re-order in the following fashion:
@@ -576,26 +557,26 @@ export default function JWMediaManager(receiverManager, container, events, analy
             // itemIds: “D”,”H”,”B”
             // New Order: “A”,”G”,”E”,“D”,”H”,”B”
             while (itemIds.length) {
-                let itemToMove = mediaStatus.items.splice(findIndexOfItem(itemIds.shift()), 1)[0];
-                mediaStatus.items.push(itemToMove);
+                let itemToMove = this.mediaStatus.items.splice(this.findIndexOfItem(itemIds.shift()), 1)[0];
+                this.mediaStatus.items.push(itemToMove);
             }
         }
 
         // Update the senders with the new queue.
-        broadcastStatus();
+        this.broadcastStatus();
     }
 
-    function onPreload(event) {
+    onPreload(event) {
         // Not supported currently.
         // We might be able to support this by
         // creating multiple player instances.
-        sendError(MessageType.INVALID_REQUEST,
+        this.sendError(ErrorType.INVALID_REQUEST,
             ErrorReason.INVALID_COMMAND, event);
     }
 
-    function onCancelPreload(event) {
+    onCancelPreload(event) {
         // Not supported currently.
-        sendError(MessageType.INVALID_REQUEST,
+        this.sendError(ErrorType.INVALID_REQUEST,
             ErrorReason.INVALID_COMMAND, event);
     }
 
@@ -605,40 +586,40 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Chromecast events.
      */
 
-    function handleComplete() {
-        events.publish(Events.MEDIA_COMPLETE, {
-            item: mediaStatus.media
+    handleComplete() {
+        this.events.publish(Events.MEDIA_COMPLETE, {
+            item: this.mediaStatus.media
         });
-        loadNextMediaItem();
+        this.loadNextMediaItem();
     }
 
     /**
      * Handler for JW Player setupErrors.
      * @param  {Object} setupError The setupError to handle.
      */
-    function handleSetupError(setupError) {
+    handleSetupError(setupError) {
         console.error('Failed to initialize player: %O', setupError);
-        broadcastMessage({
-            type: MessageType.LOAD_FAILED,
-            requestId: currentRequestId ? currentRequestId : 0
+        this.broadcastMessage({
+            type: ErrorType.LOAD_FAILED,
+            requestId: this.currentRequestId ? this.currentRequestId : 0
         });
-        currentRequestId = 0;
-        mediaStatus.playerState = PlayerState.IDLE;
-        mediaStatus.idleReason = IdleReason.ERROR;
-        broadcastStatus();
+        this.currentRequestId = 0;
+        this.mediaStatus.playerState = PlayerState.IDLE;
+        this.mediaStatus.idleReason = IdleReason.ERROR;
+        this.broadcastStatus();
     }
 
     /**
      * Handler for JW Player mediaErrors.
      */
-    function handleMediaError(error) {
-        let nextItem = getNextItemInQueue();
-        let willAdvance = nextItem || mediaStatus.repeatMode == RepeatMode.REPEAT_ALL_AND_SHUFFLE
-            && mediaStatus.items && mediaStatus.items.length > 2;
+    handleMediaError(error) {
+        let nextItem = this.getNextItemInQueue();
+        let willAdvance = nextItem || this.mediaStatus.repeatMode == RepeatMode.REPEAT_ALL_AND_SHUFFLE
+            && this.mediaStatus.items && this.mediaStatus.items.length > 2;
 
-        events.publish(Events.MEDIA_ERROR, {
+        this.events.publish(Events.MEDIA_ERROR, {
             error: error,
-            currentItem: mediaStatus.media,
+            currentItem: this.mediaStatus.media,
             nextItem: nextItem,
             willAdvance: willAdvance,
             timeout: ERROR_TIMEOUT
@@ -647,7 +628,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
         if (nextItem || willAdvance) {
             // Try to play the next item.
             window.setTimeout(() => {
-                loadNextMediaItem();
+                this.loadNextMediaItem();
             }, ERROR_TIMEOUT);
         }
     }
@@ -655,29 +636,29 @@ export default function JWMediaManager(receiverManager, container, events, analy
     /**
      * Handler for JW Player on('time') updates.
      */
-    function handleTime(event) {
+    handleTime(event) {
         // Update the UI
-        events.publish(Events.MEDIA_TIME, {
+        this.events.publish(Events.MEDIA_TIME, {
             currentTime: event.position,
             duration: event.duration
         });
-        if (mediaStatus) {
-            mediaStatus.currentTime = event.position;
+        if (this.mediaStatus) {
+            this.mediaStatus.currentTime = event.position;
 
             let broadcastStatusUpdate = false;
-            if (mediaStatus.media.duration != event.duration) {
+            if (this.mediaStatus.media.duration != event.duration) {
                 // Check if we need to broadcast a status
                 // update for a playing event, if this is
                 // the first time we figure out a duration.
                 broadcastStatusUpdate = true;
-                let media = mediaStatus.media;
+                let media = this.mediaStatus.media;
                 media.duration = event.duration;
 
                 // Update mediaStatus.breaks with breaks that require
                 // the duration to be known (e.g. postrolls & ads with a percentual offset).
                 if (media.customData && media.customData.advertising
                     && media.customData.advertising.schedule) {
-                    let adBreaks = mediaStatus.media.breaks || [];
+                    let adBreaks = this.mediaStatus.media.breaks || [];
                     let adSchedule = media.customData.advertising.schedule;
                     Object.keys(adSchedule).forEach(breakId => {
                         let adBreak = adSchedule[breakId];
@@ -686,17 +667,17 @@ export default function JWMediaManager(receiverManager, container, events, analy
                             return;
                         }
                         let adPosition = adBreak.offset === 'post' ?
-                        media.duration : offsetTime(adBreak.offset, media.duration);
+                        media.duration : this.offsetTime(adBreak.offset, media.duration);
                         adBreaks.push(new AdBreakInfo(breakId, adPosition));
                     });
-                    mediaStatus.media.breaks = adBreaks;
+                    this.mediaStatus.media.breaks = adBreaks;
                 }
             }
             // TODO: live stream support - chromecast does not
             // expect jwplayer's definition of position for the
             // currentTime of live streams.
             if (broadcastStatusUpdate) {
-                broadcastStatus();
+                this.broadcastStatus();
             }
         }
     }
@@ -704,9 +685,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
     /**
      * Handler for JW Player on('captionList') events.
      */
-    function handleCaptions(captionListEvent) {
+    handleCaptions(captionListEvent) {
         let tracksChanged = false;
-        mediaStatus.media.tracks = mediaStatus.media.tracks || [];
+        this.mediaStatus.media.tracks = this.mediaStatus.media.tracks || [];
 
         // Update mediaStatus.media.tracks/activeTrackIds and send status if applicable.
         captionListEvent.tracks.forEach((captionTrack, trackIndex) => {
@@ -715,16 +696,16 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 return;
             }
 
-            let newTrack = mediaStatus.media.tracks.length == 0
-            || !mediaStatus.media.tracks.some(track => track.type == TrackType.TEXT
+            let newTrack = this.mediaStatus.media.tracks.length == 0
+            || !this.mediaStatus.media.tracks.some(track => track.type == TrackType.TEXT
             && track.trackContentId == captionTrack.id);
 
             if (newTrack) {
             // Build a new cast.receiver.media.Track object, add it to mediaStatus.media.tracks.
-                mediaStatus.media.tracks.push({
+                this.mediaStatus.media.tracks.push({
                     name: captionTrack.label,
                     trackContentId: captionTrack.id,
-                    trackId: generateTrackId(),
+                    trackId: this.generateTrackId(),
                     type: TrackType.TEXT,
                     subtype: TextTrackType.CAPTIONS // TODO: distinguish between CC and SUBTITLES
                 });
@@ -735,40 +716,40 @@ export default function JWMediaManager(receiverManager, container, events, analy
         if (captionListEvent.track == 0 && !tracksChanged) {
             // If the caption track is disabled, make sure
             // that we update the array of activeTrackIds.
-            tracksChanged = updateActiveTracks();
+            tracksChanged = this.updateActiveTracks();
         }
 
         if (tracksChanged) {
-            broadcastStatus();
+            this.broadcastStatus();
         }
     }
 
     /**
      * Handler for JW Player on('audioTrack') events.
      */
-    function handleAudioTracks(event) {
+    handleAudioTracks(event) {
         let tracksChanged = false;
-        mediaStatus.media.tracks = mediaStatus.media.tracks || [];
+        this.mediaStatus.media.tracks = this.mediaStatus.media.tracks || [];
 
         event.tracks.forEach((audioTrack, index) => {
-            let newTrack = mediaStatus.media.tracks.length == 0
-                || !mediaStatus.media.tracks.some(track => track.type == TrackType.AUDIO
+            let newTrack = this.mediaStatus.media.tracks.length == 0
+                || !this.mediaStatus.media.tracks.some(track => track.type == TrackType.AUDIO
                 && track.trackContentId == index);
 
             if (newTrack) {
-                mediaStatus.media.tracks.push({
+                this.mediaStatus.media.tracks.push({
                     name: audioTrack.name,
                     trackContentId: index,
                     type: TrackType.AUDIO,
-                    trackId: generateTrackId()
+                    trackId: this.generateTrackId()
                 });
                 tracksChanged = true;
             }
         });
 
         if (tracksChanged) {
-            updateActiveTracks();
-            broadcastStatus();
+            this.updateActiveTracks();
+            this.broadcastStatus();
         }
     }
 
@@ -776,7 +757,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Handler for the JW Player on('adImpression') events.
      * Used for IMA only.
      */
-    function handleAdImpression(event) {
+    handleAdImpression(event) {
         let ima = event.ima;
         if (!ima) {
             return;
@@ -816,37 +797,37 @@ export default function JWMediaManager(receiverManager, container, events, analy
         adMeta.companions = AdCompanion.convertImaCompanions(ad.getCompanionAds(300, 250, adSelectionSettings));
 
         // Forward the meta object to the adMeta handler.
-        handleAdMeta(adMeta);
+        this.handleAdMeta(adMeta);
     }
 
     /**
      * Handler for JW Player on('adMeta') events.
      */
-    function handleAdMeta(event) {
-        events.publish(Events.AD_IMPRESSION, {
+    handleAdMeta(event) {
+        this.events.publish(Events.AD_IMPRESSION, {
             meta: event
         });
-        let customData = mediaStatus.customData;
+        let customData = this.mediaStatus.customData;
         customData.adMeta = event;
         // Force playerState to playing.
-        mediaStatus.playerState = PlayerState.PLAYING;
+        this.mediaStatus.playerState = PlayerState.PLAYING;
 
         if (!event.sequence || event.sequence == 1) {
             // This is the first ad in a pod.
-            adPodStartTime = Date.now();
+            this.adPodStartTime = Date.now();
         }
 
         // Populate mediaStatus.media.breaks and mediaStatus.media.breakClips.
-        let adSchedule = playerInstance.getPlaylist()[playerInstance.getPlaylistIndex()].adschedule;
+        let adSchedule = this.playerInstance.getPlaylist()[this.playerInstance.getPlaylistIndex()].adschedule;
         if (adSchedule) {
-            let breaks = mediaStatus.media.breaks;
+            let breaks = this.mediaStatus.media.breaks;
             if (!breaks) {
                 // We are dealing with a preroll, the duration of the media is unknown
                 // and because of that the breaks have not yet been initialized.
                 // We initialize an array of breaks, but we do not add the breaks
                 // that require the duration to be known.
                 breaks = [];
-                let schedule = mediaStatus.media.customData.advertising.schedule;
+                let schedule = this.mediaStatus.media.customData.advertising.schedule;
                 Object.keys(schedule).forEach(breakId => {
                     let adBreak = schedule[breakId];
                     if (adBreak.offset.indexOf('%') != -1
@@ -862,11 +843,11 @@ export default function JWMediaManager(receiverManager, container, events, analy
                         jwplayer.utils.seconds(adBreak.offset) : Number.parseFloat(adBreak.offset);
                     }
                     breaks.push(new AdBreakInfo(breakId, breakPosition));
-                    mediaStatus.media.breaks = breaks;
+                    this.mediaStatus.media.breaks = breaks;
                 });
             }
 
-            let breakClips = mediaStatus.media.breakClips || [];
+            let breakClips = this.mediaStatus.media.breakClips || [];
 
             // First find the "id" of the current ad break.
             let currentBreakId = null;
@@ -895,7 +876,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
             // Update the media status.
             breakClips.push(adBreakClipInfo);
-            mediaStatus.media.breakClips = breakClips;
+            this.mediaStatus.media.breakClips = breakClips;
 
             let breakClipIds = currentBreak.breakClipIds || [];
             breakClipIds.push(adBreakClipInfo.id);
@@ -906,26 +887,26 @@ export default function JWMediaManager(receiverManager, container, events, analy
             adBreakStatus.breakId = currentBreakId;
             adBreakStatus.breakClipId = adBreakClipInfo.id;
             adBreakStatus.whenSkippable = event.skipoffset ? event.skipoffset : -1;
-            mediaStatus.breakStatus = adBreakStatus;
+            this.mediaStatus.breakStatus = adBreakStatus;
         }
 
-        broadcastStatus();
+        this.broadcastStatus();
     }
 
     /**
      * Handler for the JW Player on('adTime') event.
      */
-    function handleAdTime(event) {
-        events.publish(Events.AD_TIME, event);
-        if (mediaStatus.breakStatus) {
-            let adBreakStatus = mediaStatus.breakStatus;
+    handleAdTime(event) {
+        this.events.publish(Events.AD_TIME, event);
+        if (this.mediaStatus.breakStatus) {
+            let adBreakStatus = this.mediaStatus.breakStatus;
             adBreakStatus.currentBreakClipTime = event.position;
-            adBreakStatus.currentBreakTime = (Date.now() - adPodStartTime) / 1000;
+            adBreakStatus.currentBreakTime = (Date.now() - this.adPodStartTime) / 1000;
 
             // Update the ad duration.
             // TODO: prevent look-up of the adBreak in mediaStatus.media.breaks for
             // every time update?
-            mediaStatus.media.breakClips.some(breakClip => {
+            this.mediaStatus.media.breakClips.some(breakClip => {
                 if (breakClip.id === adBreakStatus.breakClipId) {
                     breakClip.duration = event.duration;
                     return true;
@@ -938,13 +919,13 @@ export default function JWMediaManager(receiverManager, container, events, analy
     /**
      * Handler for the JW Player on('adComplete') event.
      */
-    function handleAdComplete(event) {
-        events.publish(Events.AD_COMPLETE, event);
-        let customData = mediaStatus.customData;
+    handleAdComplete(event) {
+        this.events.publish(Events.AD_COMPLETE, event);
+        let customData = this.mediaStatus.customData;
         delete customData.adMeta;
 
         // Update the isWatched property if necessary.
-        mediaStatus.media.breaks.some(adBreak => {
+        this.mediaStatus.media.breaks.some(adBreak => {
             if (adBreak.breakClipIds
         && adBreak.breakClipIds.indexOf(event.id) != -1) {
                 adBreak.isWatched = true;
@@ -952,8 +933,8 @@ export default function JWMediaManager(receiverManager, container, events, analy
             }
         });
 
-        delete mediaStatus.breakStatus;
-        broadcastStatus();
+        delete this.mediaStatus.breakStatus;
+        this.broadcastStatus();
     }
 
     /*
@@ -964,19 +945,19 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Loads an item on JW Player.
      * @param {MediaInfo} the item to load, this can be a MediaQueue item, or a media item.
      */
-    function loadItem(item) {
+    loadItem(item) {
         return new Promise((resolve, reject) => {
             // Broadcast a MEDIA_LOAD event.
-            events.publish(Events.MEDIA_LOAD, {
+            this.events.publish(Events.MEDIA_LOAD, {
                 item: item
             });
 
-            if (!playerInstance) {
-                playerInstance = jwplayer(container);
+            if (!this.playerInstance) {
+                this.playerInstance = jwplayer(this.container);
             }
 
             let media = item.media ? item.media : item;
-            let playlist = mediaToPlaylist(media);
+            let playlist = this.mediaToPlaylist(media);
             let playerConfig = {
                 primary: 'html5',
                 width: '100%',
@@ -985,7 +966,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 hlshtml: true,
                 autostart: item.autoplay ? item.autoplay : true,
                 controls: false,
-                analytics: analyticsConfig,
+                analytics: this.analyticsConfig,
             };
 
             let customMediaData = media.customData || {};
@@ -1003,31 +984,33 @@ export default function JWMediaManager(receiverManager, container, events, analy
             // if (playerInstance.getConfig()) {
             //   playerInstance.stop();
             // }
-            playerInstance.setup(playerConfig);
+            this.playerInstance.setup(playerConfig);
 
-            mediaStatus.currentTime = 0;
+            this.mediaStatus.currentTime = 0;
             if ((item.startTimeOverride || item.startTime) && item.streamType != 'LIVE') {
                 // TODO: Check for live.
                 let startTime = item.startTimeOverride ? item.startTimeOverride : item.startTime;
 
-                mediaStatus.currentTime = startTime;
-                playerInstance.once('ready', function() {
-                    playerInstance.seek(startTime);
+                this.mediaStatus.currentTime = startTime;
+                this.playerInstance.once('ready', function() {
+                    if (this.playerInstance) {
+                        this.playerInstance.seek(startTime);
+                    }
                 });
 
                 // The startTime can only be overridden once.
                 delete item.startTimeOverride;
             }
 
-            mediaStatus.playerState = (item.autoplay || item.autoplay === undefined)
+            this.mediaStatus.playerState = (item.autoplay || item.autoplay === undefined)
             ? PlayerState.BUFFERING : PlayerState.PAUSED;
-            mediaStatus.media = media;
-            mediaStatus.activeTrackIds = [];
+            this.mediaStatus.media = media;
+            this.mediaStatus.activeTrackIds = [];
             // TODO:
             // Chrome senders might have issues if they receive a status
             // update with a media.duration of 0 when the player state is set to
             // playing.
-            mediaStatus.media.duration = mediaStatus.media.duration || 0;
+            this.mediaStatus.media.duration = this.mediaStatus.media.duration || 0;
 
             // Ensure new media metadata gets pushed to
             // the senders.
@@ -1035,26 +1018,26 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
             // Update the currentItemId.
             if (item.itemId) {
-                mediaStatus.currentItemId = item.itemId;
+                this.mediaStatus.currentItemId = item.itemId;
             } else {
-                delete mediaStatus.currentItemId;
+                delete this.mediaStatus.currentItemId;
             }
 
-            registerPlayerStateListeners();
+            this.registerPlayerStateListeners();
 
-            playerInstance.once('setupError', reject);
-            playerInstance.once('error', reject);
-            if (mediaStatus.media.duration) {
+            this.playerInstance.once('setupError', reject);
+            this.playerInstance.once('error', reject);
+            if (this.mediaStatus.media.duration) {
                 // Update ad break info before resolving.
-                initAdBreakInfo(media);
+                this.initAdBreakInfo(media);
             }
 
-            let hasPreRoll = mediaStatus.media.breaks
-            && mediaStatus.media.breaks.some(adBreak => {
+            let hasPreRoll = this.mediaStatus.media.breaks
+            && this.mediaStatus.media.breaks.some(adBreak => {
                 return adBreak.position === 0;
             });
 
-            if (hasPreRoll && !mediaStatus.media.duration) {
+            if (hasPreRoll && !this.mediaStatus.media.duration) {
                 // It is impossible to determine the duration
                 // before playback.
                 resolve();
@@ -1062,37 +1045,36 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 // Listen for the 'meta' event in order the duration
                 // before playback begins.
                 const onDuration = event => {
-                    console.log('onDuration');
                     if (event.duration >= 0) {
-                        playerInstance.off('meta time', onDuration);
-                        mediaStatus.media.duration = event.duration;
+                        this.playerInstance.off('meta time', onDuration);
+                        this.mediaStatus.media.duration = event.duration;
                         resolve();
                     }
                 };
-                playerInstance.on('meta time', onDuration);
+                this.playerInstance.on('meta time', onDuration);
             }
         });
     }
 
-    function loadNextMediaItem() {
+    loadNextMediaItem() {
         let index;
         let n;
         let temp;
         let i;
 
-        if (mediaStatus) {
-            switch (mediaStatus.repeatMode) {
+        if (this.mediaStatus) {
+            switch (this.mediaStatus.repeatMode) {
                 case RepeatMode.REPEAT_OFF:
                     // Remove the current item from mediaSession/queue.
                     // Load next item on player and play.
-                    if (mediaStatus.items) {
+                    if (this.mediaStatus.items) {
                         // Pop the current item of the queue.
-                        mediaStatus.items.shift();
+                        this.mediaStatus.items.shift();
                         // If there is a next item in the queue, play it.
-                        if (mediaStatus.items.length != 0) {
-                            loadItem(mediaStatus.items[0]).catch(handleSetupError);
+                        if (this.mediaStatus.items.length != 0) {
+                            this.loadItem(mediaStatus.items[0]).catch(this.handleSetupError);
                         } else {
-                            mediaStatus.idleReason = IdleReason.FINISHED;
+                            this.mediaStatus.idleReason = IdleReason.FINISHED;
                         }
                         // Make sure to push the updated queue to connected
                         // senders.
@@ -1100,31 +1082,31 @@ export default function JWMediaManager(receiverManager, container, events, analy
                     }
                     break;
                 case RepeatMode.REPEAT_ALL:
-                    index = getCurrentQueueIndex();
+                    index = this.getCurrentQueueIndex();
                     if (index) {
-                        if (index < mediaStatus.items.length - 1) {
+                        if (index < this.mediaStatus.items.length - 1) {
                             // Play the next item.
-                            loadItem(mediaStatus.items[index++]).catch(handleSetupError);
+                            this.loadItem(this.mediaStatus.items[index++]).catch(this.handleSetupError);
                         } else {
                             // Recycle through the queue.
-                            loadItem(mediaStatus.items[0]).catch(handleSetupError);
+                            this.loadItem(this.mediaStatus.items[0]).catch(this.handleSetupError);
                         }
                     }
                     break;
                 case RepeatMode.REPEAT_SINGLE:
                     // Seek to the beginning.
-                    playerInstance.seek(0);
+                    this.playerInstance.seek(0);
                     // Restart playback.
-                    playerInstance.play(true);
+                    this.playerInstance.play(true);
                     break;
                 case RepeatMode.REPEAT_ALL_AND_SHUFFLE:
-                    index = getCurrentQueueIndex();
+                    index = this.getCurrentQueueIndex();
                     if (index) {
-                        if (index < mediaStatus.items.length - 1) {
-                            loadItem(mediaStatus.items[index++]).catch(handleSetupError);
+                        if (index < this.mediaStatus.items.length - 1) {
+                            this.loadItem(this.mediaStatus.items[index++]).catch(this.handleSetupError);
                         } else {
                             // Shuffle time!
-                            n = mediaStatus.items.length;
+                            n = this.mediaStatus.items.length;
 
                             // Shuffle the queue using Fisher-Yates (O(n)):
                             while (n) {
@@ -1132,13 +1114,13 @@ export default function JWMediaManager(receiverManager, container, events, analy
                                 i = Math.floor(Math.random() * n--);
 
                                 // Swap it with the current element.
-                                temp = mediaStatus.items[n];
-                                mediaStatus.items[n] = mediaStatus.items[i];
-                                mediaStatus.items[i] = temp;
+                                temp = this.mediaStatus.items[n];
+                                this.mediaStatus.items[n] = this.mediaStatus.items[i];
+                                this.mediaStatus.items[i] = temp;
                             }
 
                             // Play the first item.
-                            loadItem(mediaStatus.items[0]).catch(handleSetupError);
+                            this.loadItem(this.mediaStatus.items[0]).catch(this.handleSetupError);
 
                             // Make sure to push the updated queue to connected
                             // senders.
@@ -1153,8 +1135,8 @@ export default function JWMediaManager(receiverManager, container, events, analy
         }
     }
 
-    function updatePlayerState(newState, adPlaying) {
-        if (mediaStatus) {
+    updatePlayerState(newState, adPlaying) {
+        if (this.mediaStatus) {
             let newPlayerState;
             switch (newState) {
                 case 'buffer':
@@ -1172,100 +1154,100 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 default:
                     break;
             }
-            let oldState = mediaStatus.playerState;
-            mediaStatus.playerState = newPlayerState;
+            let oldState = this.mediaStatus.playerState;
+            this.mediaStatus.playerState = newPlayerState;
             if (!adPlaying) {
-                events.publish(Events.STATE_CHANGE, {
+                this.events.publish(Events.STATE_CHANGE, {
                     oldState: oldState,
-                    newState: mediaStatus.playerState
+                    newState: this.mediaStatus.playerState
                 });
             }
-            broadcastStatus();
+            this.broadcastStatus();
         }
     }
 
-    function registerPlayerStateListeners() {
-        playerInstance.on('buffer', () => {
-            updatePlayerState('buffer', false);
+    registerPlayerStateListeners() {
+        this.playerInstance.on('buffer', () => {
+            this.updatePlayerState('buffer', false);
         });
-        playerInstance.on('idle', () => {
-            updatePlayerState('idle', false);
+        this.playerInstance.on('idle', () => {
+            this.updatePlayerState('idle', false);
         });
-        playerInstance.on('pause', () => {
-            updatePlayerState('pause', false);
+        this.playerInstance.on('pause', () => {
+            this.updatePlayerState('pause', false);
         });
-        playerInstance.on('play', () => {
-            updatePlayerState('play', false);
+        this.playerInstance.on('play', () => {
+            this.updatePlayerState('play', false);
         });
-        playerInstance.on('time', handleTime);
-        playerInstance.on('error', handleMediaError);
-        playerInstance.on('mediaError', handleMediaError);
-        playerInstance.on('complete', handleComplete);
-        playerInstance.on('captionsList', handleCaptions);
-        playerInstance.on('audioTracks', handleAudioTracks);
-        playerInstance.on('playlistItem', (playlistItem) => {
-            events.publish(Events.MEDIA_LOADED, {
-                media: mediaStatus.media,
+        this.playerInstance.on('time', this.handleTime.bind(this));
+        this.playerInstance.on('error', this.handleMediaError.bind(this));
+        this.playerInstance.on('mediaError', this.handleMediaError.bind(this));
+        this.playerInstance.on('complete', this.handleComplete.bind(this));
+        this.playerInstance.on('captionsList', this.handleCaptions.bind(this));
+        this.playerInstance.on('audioTracks', this.handleAudioTracks.bind(this));
+        this.playerInstance.on('playlistItem', (playlistItem) => {
+            this.events.publish(Events.MEDIA_LOADED, {
+                media: this.mediaStatus.media,
                 playlistItem: playlistItem
             });
         });
-        playerInstance.on('seek', event => events.publish(Events.MEDIA_SEEK, event));
-        playerInstance.on('seeked', () => {
-            events.publish(Events.MEDIA_SEEKED, {});
+        this.playerInstance.on('seek', event => this.events.publish(Events.MEDIA_SEEK, event));
+        this.playerInstance.on('seeked', () => {
+            this.events.publish(Events.MEDIA_SEEKED, {});
         });
         // googima doesn't fire adMeta events, thus we use the adImpression event
         // to trigger the handler.
-        if (mediaStatus.media.customData
-            && mediaStatus.media.customData.advertising) {
-            let advertising = mediaStatus.media.customData.advertising;
+        if (this.mediaStatus.media.customData
+            && this.mediaStatus.media.customData.advertising) {
+            let advertising = this.mediaStatus.media.customData.advertising;
             if (advertising.client === 'vast') {
-                playerInstance.on('adMeta', handleAdMeta);
+                this.playerInstance.on('adMeta', this.handleAdMeta);
             } else if (advertising.client === 'googima') {
-                playerInstance.on('adImpression', handleAdImpression);
+                this.playerInstance.on('adImpression', this.handleAdImpression);
             }
         }
-        playerInstance.on('adPlay', event => {
-            updatePlayerState('play', true);
-            events.publish(Events.AD_PLAY, event);
+        this.playerInstance.on('adPlay', event => {
+            this.updatePlayerState('play', true);
+            this.events.publish(Events.AD_PLAY, event);
         });
-        playerInstance.on('adPause', event => {
-            updatePlayerState('pause', true);
-            events.publish(Events.AD_PAUSE, event);
+        this.playerInstance.on('adPause', event => {
+            this.updatePlayerState('pause', true);
+            this.events.publish(Events.AD_PAUSE, event);
         });
-        playerInstance.on('adComplete', handleAdComplete);
-        playerInstance.on('adError', event => {
+        this.playerInstance.on('adComplete', this.handleAdComplete);
+        this.playerInstance.on('adError', event => {
             console.error('AdError: %O', event);
-            events.publish(Events.AD_ERROR, event);
-            delete mediaStatus.customData.adMeta;
-            delete mediaStatus.breakStatus;
-            broadcastStatus();
+            this.events.publish(Events.AD_ERROR, event);
+            delete this.mediaStatus.customData.adMeta;
+            delete this.mediaStatus.breakStatus;
+            this.broadcastStatus();
         });
-        playerInstance.on('adTime', handleAdTime);
+        this.playerInstance.on('adTime', this.handleAdTime);
     }
 
-    function removeStateListeners() {
-        playerInstance.off('buffer');
-        playerInstance.off('idle');
-        playerInstance.off('pause');
-        playerInstance.off('play');
-        playerInstance.off('time');
-        playerInstance.off('error');
-        playerInstance.off('mediaError');
-        playerInstance.off('complete');
-        playerInstance.off('captionsList');
-        playerInstance.off('audioTracks');
-        playerInstance.off('adMeta');
-        playerInstance.off('adComplete');
-        playerInstance.off('adError');
-        playerInstance.off('adImpression');
+    removeStateListeners() {
+        this.playerInstance.off('buffer');
+        this.playerInstance.off('idle');
+        this.playerInstance.off('pause');
+        this.playerInstance.off('play');
+        this.playerInstance.off('time');
+        this.playerInstance.off('error');
+        this.playerInstance.off('mediaError');
+        this.playerInstance.off('complete');
+        this.playerInstance.off('captionsList');
+        this.playerInstance.off('audioTracks');
+        this.playerInstance.off('adMeta');
+        this.playerInstance.off('adComplete');
+        this.playerInstance.off('adError');
+        this.playerInstance.off('adImpression');
     }
 
-    function serializeStatus(requestId) {
-        updateActiveTracks();
+    serializeStatus(requestId) {
+        this.updateActiveTracks();
 
         let statusCopy;
-        if (mediaStatus) {
-            statusCopy = Object.assign({}, mediaStatus);
+        if (this.mediaStatus) {
+            statusCopy = Object.assign({}, this.mediaStatus);
 
             // Delete properties we don't want to send.
             // for (let flag in MediaStatusFlags) {
@@ -1283,50 +1265,50 @@ export default function JWMediaManager(receiverManager, container, events, analy
 
         let status = {
             type: MessageType.MEDIA_STATUS,
-            requestId: requestId ? requestId : currentRequestId,
+            requestId: requestId ? requestId : this.currentRequestId,
             status: statusCopy ? [statusCopy] : []
         };
         // Always reset the requestId after a message has been sent with it.
-        currentRequestId = 0;
+        this.currentRequestId = 0;
         return status;
     }
 
-    function broadcastStatus(requestId) {
-        if (isLoading) {
+    broadcastStatus(requestId) {
+        if (this.isLoading) {
             return;
         }
-        broadcastMessage(serializeStatus(requestId));
+        this.broadcastMessage(this.serializeStatus(requestId));
     }
 
-    function sendStatus(senderId, requestId) {
-        if (isLoading) {
+    sendStatus(senderId, requestId) {
+        if (this.isLoading) {
             return;
         }
-        let status = serializeStatus(requestId);
-        sendMessage(senderId, status);
+        let status = this.serializeStatus(requestId);
+        this.sendMessage(senderId, status);
     }
 
-    function sendErrorInvalidRequest(event, reason) {
-        sendError(MessageType.INVALID_REQUEST, reason, event);
+    sendErrorInvalidRequest(event, reason) {
+        this.sendError(ErrorType.INVALID_REQUEST, reason, event);
     }
 
-    function sendErrorInvalidPlayerState(event) {
-        broadcastMessage({
-            requestId: event.requestId ? event.requestId : 0,
-            type: MessageType.INVALID_PLAYER_STATE,
+    sendErrorInvalidPlayerState(event) {
+        this.broadcastMessage({
+            requestId: event.data && event.data.requestId ? event.data.requestId : 0,
+            type: ErrorType.INVALID_PLAYER_STATE,
         });
     }
 
-    function sendErrorLoadCancelled(event) {
-        broadcastMessage({
-            requestId: event.requestId ? event.requestId : 0,
-            type: MessageType.LOAD_CANCELLED
+    sendErrorLoadCancelled(event) {
+        this.broadcastMessage({
+            requestId: event.data && event.data.requestId ? event.data.requestId : 0,
+            type: ErrorType.LOAD_CANCELLED
         });
     }
 
-    function sendError(messageType, reason, event) {
-        broadcastMessage({
-            requestId: event.requestId ? event.requestId : 0,
+    sendError(messageType, reason, event) {
+        this.broadcastMessage({
+            requestId: event.data && event.data.requestId ? event.data.requestId : 0,
             type: messageType,
             reason: reason
         });
@@ -1335,32 +1317,34 @@ export default function JWMediaManager(receiverManager, container, events, analy
     /**
      * Creates a new mediaSession, destroying an existing one if it exists.
      */
-    function createMediaSession() {
-        if (playerInstance) {
-            playerInstance.stop();
-            removeStateListeners();
+    createMediaSession() {
+        if (this.playerInstance) {
+            this.playerInstance.stop();
+            this.removeStateListeners();
         }
 
-        let mediaSessionId = mediaStatus ? mediaStatus.mediaSessionId += 1 : 1;
-        mediaStatus = new cast.receiver.media.MediaStatus();
-        mediaStatus.activeTrackIds = [];
-        mediaStatus.supportedMediaCommands = SUPPORTED_FEATURES;
-        mediaStatus.mediaSessionId = mediaSessionId;
-        mediaStatus.customData = {};
+        let mediaSessionId = this.mediaStatus ? this.mediaStatus.mediaSessionId += 1 : 1;
+        this.mediaStatus = new cast.framework.messages.MediaStatus();
+        this.mediaStatus.activeTrackIds = [];
+        this.mediaStatus.supportedMediaCommands = SUPPORTED_FEATURES;
+        this.mediaStatus.mediaSessionId = mediaSessionId;
+        this.mediaStatus.customData = {};
     }
 
-    function getCurrentQueueIndex() {
-        return findIndexOfItem(mediaStatus.currentItemId);
+    getCurrentQueueIndex() {
+        if (this.mediaStatus) {
+            return this.findIndexOfItem(this.mediaStatus.currentItemId);
+        }
     }
 
-    function findIndexOfItem(itemId) {
+    findIndexOfItem(itemId) {
         let itemIndex = -1;
         if (!itemId || !mediaStatus.items
-            || mediaStatus.items.length == 0) {
+            || this.mediaStatus.items.length == 0) {
             return itemIndex;
         }
 
-        mediaStatus.items.some((mediaItem, index) => {
+        this.mediaStatus.items.some((mediaItem, index) => {
             if (itemId == mediaItem.itemId) {
                 itemIndex = index;
                 return true;
@@ -1369,14 +1353,14 @@ export default function JWMediaManager(receiverManager, container, events, analy
         return itemIndex;
     }
 
-    function getTrackIndex(trackId) {
+    getTrackIndex(trackId) {
         let trackIndex = -1;
-        if (!trackId || !mediaStatus.media.tracks
-            || mediaStatus.media.tracks.length == 0) {
+        if (!trackId || !this.mediaStatus.media.tracks
+            || this.mediaStatus.media.tracks.length == 0) {
             return trackIndex;
         }
 
-        mediaStatus.media.tracks.some((track, index) => {
+        this.mediaStatus.media.tracks.some((track, index) => {
             if (trackId == track.trackId) {
                 trackIndex = index;
                 return true;
@@ -1386,16 +1370,16 @@ export default function JWMediaManager(receiverManager, container, events, analy
         return trackIndex;
     }
 
-    function getTrackById(trackId) {
-        let trackIndex = getTrackIndex(trackId);
+    getTrackById(trackId) {
+        let trackIndex = this.getTrackIndex(trackId);
         if (trackIndex < 0) {
             return null;
         }
-        return mediaStatus.media.tracks[trackIndex];
+        return this.mediaStatus.media.tracks[trackIndex];
     }
 
     // Converts a Chromecast Media Object into a JW Player playlist.
-    function mediaToPlaylist(media) {
+    mediaToPlaylist(media) {
         let playlistItem = {
             file: media.contentId,
             tracks: []
@@ -1441,7 +1425,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
         return [playlistItem];
     }
 
-    function offsetTime(offset, duration) {
+    offsetTime(offset, duration) {
         if (offset.toString().slice(-1) === '%') {
             return duration * Number.parseFloat(offset.slice(0, -1)) / 100;
         }
@@ -1449,7 +1433,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
     }
 
     // Parses Ad Breaks from the customData section of a MediaInfo object.
-    function parseBreaksFromMediaInfo(media) {
+    parseBreaksFromMediaInfo(media) {
         let adBreaks = [];
         if (!media.customData || !media.customData.advertising
             || !media.customData.advertising.schedule) {
@@ -1465,7 +1449,7 @@ export default function JWMediaManager(receiverManager, container, events, analy
                 breakPosition = media.duration;
             } else {
                 breakPosition = adBreak.offset.indexOf(':') != -1 ?
-                jwplayer.utils.seconds(adBreak.offset) : offsetTime(adBreak.offset, media.duration);
+                jwplayer.utils.seconds(adBreak.offset) : this.offsetTime(adBreak.offset, media.duration);
             }
             adBreaks.push(new AdBreakInfo(breakId, breakPosition));
         });
@@ -1475,9 +1459,9 @@ export default function JWMediaManager(receiverManager, container, events, analy
     /**
      * Initializes the "breaks" property in a MediaInfo object.
      */
-    function initAdBreakInfo(media) {
+    initAdBreakInfo(media) {
         // Update information about adBreaks in the MediaInfo object.
-        let breaks = parseBreaksFromMediaInfo(media);
+        let breaks = this.parseBreaksFromMediaInfo(media);
         if (breaks.length > 0) {
             media.breaks = breaks;
         } else {
@@ -1490,10 +1474,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
     /**
      * Generates a new unique trackId.
      */
-    function generateTrackId() {
+    generateTrackId() {
         let trackId = 1;
         // Find the highest trackId in mediaStatus.media.tracks and start numbering from that.
-        mediaStatus.media.tracks.forEach(track => {
+        this.mediaStatus.media.tracks.forEach(track => {
             if (track.trackId >= trackId) {
                 trackId = track.trackId++;
             }
@@ -1505,25 +1489,25 @@ export default function JWMediaManager(receiverManager, container, events, analy
      * Synchronizes the activeTrackIds array in the media session with
      * what is active on the JW Player instance.
      */
-    function updateActiveTracks() {
-        if (!mediaStatus) {
+    updateActiveTracks() {
+        if (!this.mediaStatus) {
             // No active media session.
             return false;
         }
 
         let activeTrackIds = [];
-        if (!playerInstance) {
-            mediaStatus.activeTrackIds = activeTrackIds;
+        if (!this.playerInstance) {
+            this.mediaStatus.activeTrackIds = activeTrackIds;
             return false;
         }
 
         // Caption Tracks
-        let activeCaptionTrackIndex = playerInstance.getCurrentCaptions();
+        let activeCaptionTrackIndex = this.playerInstance.getCurrentCaptions();
         if (activeCaptionTrackIndex > 0) {
             // Player has captions enabled.
-            let activeCaptionTrack = playerInstance.getCaptionsList()[activeCaptionTrackIndex];
+            let activeCaptionTrack = this.playerInstance.getCaptionsList()[activeCaptionTrackIndex];
             // Find the associated track in mediaStatus.media.tracks:
-            mediaStatus.media.tracks.some(track => {
+            this.mediaStatus.media.tracks.some(track => {
                 if (track.type == TrackType.TEXT
             && track.trackContentId == activeCaptionTrack.id) {
                     activeTrackIds.push(track.trackId);
@@ -1533,10 +1517,10 @@ export default function JWMediaManager(receiverManager, container, events, analy
         }
 
         // Audio Tracks
-        let activeAudioTrack = playerInstance.getCurrentAudioTrack();
+        let activeAudioTrack = this.playerInstance.getCurrentAudioTrack();
         // -1 = no alternative tracks
         if (activeAudioTrack >= 0) {
-            mediaStatus.media.tracks.some(track => {
+            this.mediaStatus.media.tracks.some(track => {
                 if (track.type == TrackType.AUDIO
             && track.trackContentId == activeAudioTrack) {
                     activeTrackIds.push(track.trackId);
@@ -1548,39 +1532,39 @@ export default function JWMediaManager(receiverManager, container, events, analy
         // TODO: Video Tracks
 
         // Check whether the activeTracks were updated.
-        let activeTracksChanged = mediaStatus.activeTrackIds.length != activeTrackIds.length
-            || mediaStatus.activeTrackIds.some(trackId => activeTrackIds.indexOf(trackId) < 0);
+        let activeTracksChanged = this.mediaStatus.activeTrackIds.length != activeTrackIds.length
+            || this.mediaStatus.activeTrackIds.some(trackId => activeTrackIds.indexOf(trackId) < 0);
         // Update the media session.
-        mediaStatus.activeTrackIds = activeTrackIds;
+        this.mediaStatus.activeTrackIds = activeTrackIds;
         return activeTracksChanged;
     }
 
     /**
      * Returns the next item in the queue.
      */
-    function getNextItemInQueue() {
+    getNextItemInQueue() {
         let index = -1;
 
         // TODO: can we get rid of the duplicated logic here?
         // maybe merge with handleComplete?
         // Is there a better way of exposing this?
-        switch (mediaStatus.repeatMode) {
+        switch (this.mediaStatus.repeatMode) {
             case RepeatMode.REPEAT_OFF:
-                return mediaStatus.items.length >= 2 ? mediaStatus.items[1] : null;
+                return this.mediaStatus.items.length >= 2 ? this.mediaStatus.items[1] : null;
             case RepeatMode.REPEAT_ALL:
-                index = getCurrentQueueIndex();
+                index = this.getCurrentQueueIndex();
                 if (index != -1) {
-                    return index == mediaStatus.items.length - 1
-                        ? mediaStatus.items[0] : mediaStatus.items[index++];
+                    return index == this.mediaStatus.items.length - 1
+                        ? this.mediaStatus.items[0] : this.mediaStatus.items[index++];
                 }
                 return null;
             case RepeatMode.REPEAT_SINGLE:
-                return mediaStatus.items[getCurrentQueueIndex()];
+                return this.mediaStatus.items[this.getCurrentQueueIndex()];
             case RepeatMode.REPEAT_ALL_AND_SHUFFLE:
-                index = getCurrentQueueIndex();
+                index = this.getCurrentQueueIndex();
                 if (index != -1) {
-                    return index == mediaStatus.items.length - 1
-                        ? null : mediaStatus.items[index++];
+                    return index == this.mediaStatus.items.length - 1
+                        ? null : this.mediaStatus.items[index++];
                 }
                 break;
             default:
@@ -1589,28 +1573,16 @@ export default function JWMediaManager(receiverManager, container, events, analy
         return null;
     }
 
-    return {
-        /**
-         * Returns the next item in the queue.
-         */
-        getNextItemInQueue: getNextItemInQueue,
+    getRepeatMode() {
+        return this.mediaStatus.repeatMode;
+    }
 
-        /**
-         * Returns the repeatMode, or null if there is no active mediaSession.
-         */
-        getRepeatMode: function() {
-            return mediaStatus.repeatMode;
-        },
-
-        /**
-         * Adds an item to the queue.
-         */
-        addItemToQueue: function(mediaQueueItem) {
-            onQueueInsert({
-                data: {
-                    items: [mediaQueueItem]
-                }
-            });
-        }
-    };
+    addItemToQueue(mediaQueueItem) {
+        this.onQueueInsert({
+            data: {
+                items: [mediaQueueItem]
+            }
+        });
+    }
 }
+

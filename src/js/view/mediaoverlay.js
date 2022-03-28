@@ -34,12 +34,12 @@ export default function MediaOverlay(element, elements) {
         updateMediaMeta: function(metadata, nextUp) {
             this.displayingNextUp = nextUp;
             if (nextUp) {
-                mediaTitle.innerHTML = `<strong>Next Up:</strong> ${metadata.title ? UIUtil.escapeHtml(metadata.title) : 'Unknown'}`;
+                mediaTitle.innerHTML = `<strong>Next Up:</strong> ${metadata && metadata.title ? UIUtil.escapeHtml(metadata.title) : 'Unknown'}`;
             } else {
-                mediaTitle.textContent = metadata.title ? metadata.title : '';
+                mediaTitle.textContent = metadata && metadata.title ? metadata.title : '';
             }
-            mediaDescription.textContent = metadata.subtitle ? metadata.subtitle : '';
-            if (metadata.images && metadata.images.length > 0) {
+            mediaDescription.textContent = metadata && metadata.subtitle ? metadata.subtitle : '';
+            if (metadata && metadata.images && metadata.images.length > 0) {
                 thumbnail.src = metadata.images[0].url;
             } else {
                 thumbnail.style.display = 'none';

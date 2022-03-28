@@ -16,7 +16,7 @@ export default function JWCastApp(element, config) {
     let timeoutHandler;
 
     // Create a receiver manager and apply overrides.
-    let receiverManager = cast.receiver.CastReceiverManager.getInstance();
+    let receiverManager = cast.framework.CastReceiverContext.getInstance();
     receiverManager.onReady = (event) => {
         events.publish(Events.APP_READY, event);
 
@@ -45,6 +45,15 @@ export default function JWCastApp(element, config) {
         let relatedController = new RelatedController(config, events, mediaManager);
     }
 
+    const options = new cast.framework.CastReceiverOptions();
+
+    // all namespaces are defined by a string and must begin with "urn:x-cast:" followed by any string
+    // https://developers.google.com/cast/docs/web_receiver/core_features#custom_messages
+    options.customNamespaces = {
+        'urn:x-cast:jw.custom.receiver': cast.framework.system.MessageType.JSON,
+        'urn:x-cast:com.google.cast.media' : cast.framework.system.MessageType.JSON
+    };
+
     // Start the application!
-    receiverManager.start();
+    receiverManager.start(options);
 }
