@@ -14,7 +14,7 @@
     "gulp-connect": "5.0.0",
     "gulp-less": "3.3.0",
     "gulp-mustache": "2.3.0",
-    "rollup": "0.36.4",
+    "rollup": "2.79.2",
     "rollup-plugin-uglify": "1.0.1",
     "uglify-js-harmony": "2.7.7"
   },
